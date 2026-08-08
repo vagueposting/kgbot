@@ -1,0 +1,29 @@
+{
+  "name": "kgbot",
+  "version": "1.0.0",
+  "description": "Extremely cool and cute Discord bot for running killing games, specialized for my specific use case.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vagueposting/kgbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/vagueposting/kgbot/issues"
+  },
+  "homepage": "https://github.com/vagueposting/kgbot#readme",
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  }
+}
