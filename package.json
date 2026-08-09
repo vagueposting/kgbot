@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node --max-old-space-size=128 ./node_modules/typescript/bin/tsc",
+    "build": "tsc --incremental",
     "postinstall": "npm run build"
   },
   "repository": {
@@ -27,5 +27,13 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "typescript": "^7.0.2"
+  },
+  "compilerOptions": {
+    "incremental": true,
+    "skipLibCheck": true,
+    "noEmitOnError": false,
+    "removeComments": true,
+    "preserveConstEnums": false,
+    "sourceMap": false
   }
 }
