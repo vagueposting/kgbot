@@ -1,0 +1,24 @@
+{
+  "name": "kgbot",
+  "version": "1.0.0",
+  "description": "Killing game bot by vagueposting.",
+  "homepage": "https://github.com/vagueposting/kgbot#readme",
+  "bugs": {
+    "url": "https://github.com/vagueposting/kgbot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vagueposting/kgbot.git"
+  },
+  "license": "MIT",
+  "author": "vagueposting",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "discord.js": "latest",
+    "dotenv": "latest"
+  }
+}
