@@ -1,8 +1,7 @@
-export enum Approaches {
-  Careful,
-  Clever,
-  Flashy,
-  Forceful,
-  Quick,
-  Sneaky,
-}
+export type Approaches =
+  | "careful"
+  | "clever"
+  | "flashy"
+  | "forceful"
+  | "quick"
+  | "sneaky";
