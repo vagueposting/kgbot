@@ -1,13 +1,6 @@
 import { Approaches } from "./approaches";
 import { SkillTags } from "./skilltags";
 
-// TODO: I'm going to turn this stuff into a class tomorrow.
-export interface POI {
-  name: string;
-  aliases: string[];
-  actions: string[];
-}
-
 export interface POIResponse {
   base: string;
   roll_dc?: number;
@@ -15,4 +8,21 @@ export interface POIResponse {
   skill_tag?: SkillTags[]; // Make an enum of valid skill tags when you get there.
   success?: string;
   failure?: string;
+}
+
+export class POI {
+  name: string;
+  aliases: string[];
+  responses: Record<string, POIResponse> = {};
+
+  constructor(name: string, aliases: string[], actions: string[]) {
+    this.name = name;
+    this.aliases = aliases;
+
+    for (const action of actions) {
+      this.responses[action] = {
+        base: "",
+      };
+    }
+  }
 }

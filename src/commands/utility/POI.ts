@@ -1,9 +1,10 @@
 import { POI } from "../../types/responses";
 
+// function to create a point of interest
 export function createPOI(
   POIname: string,
   aliases: string[],
   actions: string[],
 ): POI {
-  return { name: POIname, aliases, actions };
+  return new POI(POIname, aliases, actions);
 }
