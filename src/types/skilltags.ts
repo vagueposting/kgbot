@@ -1,6 +1,6 @@
 export type SkillTags =
   | "homemaking"
-  | "sustaining"
+  | "sustainment"
   | "skulduggery"
   | "erudition"
   | "athletics"
