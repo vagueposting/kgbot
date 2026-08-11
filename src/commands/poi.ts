@@ -7,6 +7,12 @@ import {
   StringSelectMenuBuilder,
 } from "discord.js";
 import { convertToArray } from "./utility/convertToArray";
+import { POI } from "../types/POItypes";
+
+// function to create a point of interest
+function createPOI(POIname: string, aliases: string[], actions: string[]): POI {
+  return new POI(POIname, aliases, actions);
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -19,20 +25,20 @@ module.exports = {
         )
         .addStringOption((option) =>
           option
-            .setName("PoI Name")
+            .setName("poi_name")
             .setDescription("Name of the point of interest")
             .setRequired(true),
         )
         .addStringOption((option) =>
           option
-            .setName("PoI aliases")
+            .setName("poi_aliases")
             .setDescription(
               "List all aliases for the point of interest, separated by commas.",
             ),
         )
         .addStringOption((option) =>
           option
-            .setName("PoI actions")
+            .setName("poi_actions")
             .setDescription(
               "List all actions (verbs) that can be done to the point of interest, separated by commas.",
             ),
@@ -44,12 +50,12 @@ module.exports = {
 
     switch (selectedSubcommand) {
       case "create":
-        const poiName = interaction.options.getString("PoI Name");
+        const poiName = interaction.options.getString("poi_name");
         const poiAliases = convertToArray(
-          interaction.options.getString("PoI aliases") ?? "",
+          interaction.options.getString("poi_aliases") ?? "",
         );
         const poiActions = convertToArray(
-          interaction.options.getString("PoI actions") ?? "",
+          interaction.options.getString("poi_actions") ?? "",
         );
 
         if (!poiAliases) {
