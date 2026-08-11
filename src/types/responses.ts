@@ -25,4 +25,11 @@ export class POI {
       };
     }
   }
+
+  modifyResponse(action: string, newData: POIResponse): void {
+    this.responses[action] = {
+      ...this.responses[action],
+      ...newData,
+    };
+  }
 }

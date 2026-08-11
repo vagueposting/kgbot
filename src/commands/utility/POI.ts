@@ -1,4 +1,4 @@
-import { POI } from "../../types/responses";
+import { POI, POIResponse } from "../../types/responses";
 
 // function to create a point of interest
 export function createPOI(
