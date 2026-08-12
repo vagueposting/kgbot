@@ -1,18 +1,8 @@
-import {
-  SlashCommandBuilder,
-  ChatInputCommandInteraction,
-  ModalBuilder,
-  LabelBuilder,
-  TextInputBuilder,
-  StringSelectMenuBuilder,
-} from "discord.js";
+import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import { convertToArray } from "./utility/convertToArray";
+import { generateRandomString } from "./utility/generateRandomString";
 import { POI } from "../types/POItypes";
-
-// function to create a point of interest
-function createPOI(POIname: string, aliases: string[], actions: string[]): POI {
-  return new POI(POIname, aliases, actions);
-}
+import { DatabaseSync } from "node:sqlite";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -92,8 +82,20 @@ module.exports = {
               });
             }
 
-            createPOI(poiName ?? "", poiAliases, poiActions);
+            const poi = new POI(
+              poiName ?? generateRandomString(5),
+              poiAliases,
+              poiActions,
+            );
+
+            const db = new DatabaseSync("../db/game.db");
+
+            const insertStmt = db.prepare(
+              "INSERT INTO poi (name, data) VALUES (?, ?)",
+            );
+            insertStmt.run(poi.name, poi.toJSON());
         }
+        break;
         break;
     }
   },

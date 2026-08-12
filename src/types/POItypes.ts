@@ -10,6 +10,12 @@ export interface POIResponse {
   failure?: string;
 }
 
+interface POIrow {
+  id: number;
+  name: string;
+  data: string;
+}
+
 export class POI {
   name: string;
   aliases: string[];
@@ -31,5 +37,18 @@ export class POI {
       ...this.responses[action],
       ...newData,
     };
+  }
+
+  toJSON() {
+    return JSON.stringify({
+      name: this.name,
+      aliases: this.aliases,
+      responses: this.responses,
+    });
+  }
+
+  static fromRow(row: POIrow) {
+    const parsed = JSON.parse(row.data);
+    return new POI(parsed.name, parsed.aliases, parsed.actions);
   }
 }
