@@ -10,7 +10,7 @@ module.exports = {
     .setDescription("GM command group for Points of Interest")
     .addSubcommand((subcommand) =>
       subcommand
-        .setName("create") // CREATE
+        .setName("create")
         .setDescription(
           "GM command. Sets a Point of Interest that can be accessed through aliases.",
         )
@@ -36,67 +36,64 @@ module.exports = {
         ),
     )
     .addSubcommand((group) =>
-      group
-        .setName("manage") // MANAGE POINTS OF INTEREST
-        .setDescription("Manage POIs as a whole."),
+      group.setName("manage").setDescription("Manage POIs as a whole."),
     )
     .addSubcommandGroup((group) =>
-      group
-        .setName("responses") // RESPONSE CONTROLS
-        .setDescription("Manage POI response actions"),
+      group.setName("responses").setDescription("Manage POI response actions"),
     ),
+
   async execute(interaction: ChatInputCommandInteraction) {
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand();
 
-    switch (group) {
-      case "manage":
-        // logic for group management
-        break;
-      case "responses":
-        // logic for response handling
-        break;
-      default:
-        switch (subcommand) {
-          case "create":
-            const poiName = interaction.options.getString("poi_name");
-            const poiAliases = convertToArray(
-              interaction.options.getString("poi_aliases") ?? "",
-            );
-            const poiActions = convertToArray(
-              interaction.options.getString("poi_actions") ?? "",
-            );
+    if (group === "responses") {
+      // logic for response handling
+      return;
+    }
 
-            if (!poiAliases) {
-              await interaction.reply({
-                content:
-                  "For player accessibility, it is heavily recommended that Points of Interest have aliases.",
-                ephemeral: true,
-              });
-            }
+    if (group === "manage") {
+      // logic for group management
+      return;
+    }
 
-            if (!poiActions) {
-              await interaction.reply({
-                content:
-                  'Without any actions, player characters can only passively "view" the items. Add actions for improved interactability and flavor.',
-              });
-            }
+    switch (subcommand) {
+      case "create": {
+        const poiName = interaction.options.getString("poi_name", true);
 
-            const poi = new POI(
-              poiName ?? generateRandomString(5),
-              poiAliases,
-              poiActions,
-            );
+        const poiAliases = convertToArray(
+          interaction.options.getString("poi_aliases") ?? "",
+        );
+        const poiActions = convertToArray(
+          interaction.options.getString("poi_actions") ?? "",
+        );
 
-            const db = new DatabaseSync("../db/game.db");
+        const poi = new POI(poiName, poiAliases, poiActions);
 
-            const insertStmt = db.prepare(
-              "INSERT INTO poi (name, data) VALUES (?, ?)",
-            );
-            insertStmt.run(poi.name, poi.toJSON());
+        const db = new DatabaseSync("../db/game.db");
+        const insertStmt = db.prepare(
+          "INSERT INTO poi (name, data) VALUES (?, ?)",
+        );
+        insertStmt.run(poi.name, poi.toJSON());
+        db.close();
+
+        let replyContent = `Successfully created **${poi.name}**.`;
+
+        if (poiAliases.length === 0) {
+          replyContent +=
+            "\n*Note: For player accessibility, it is heavily recommended to add aliases.*";
         }
+
+        if (poiActions.length === 0) {
+          replyContent +=
+            '\n*Note: Without any actions, characters can only passively "view" the items. Add actions for improved interactability.*';
+        }
+
+        await interaction.reply({
+          content: replyContent,
+          ephemeral: true,
+        });
         break;
-        break;
+      }
     }
   },
 };
