@@ -39,7 +39,7 @@ module.exports = {
       group.setName("manage").setDescription("Manage POIs as a whole."),
     )
     .addSubcommandGroup((group) =>
-      group.setName("responses").setDescription("Manage POI response actions"),
+      group.setName("responses").setDescription("Manage POI response actions."),
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -80,12 +80,12 @@ module.exports = {
 
         if (poiAliases.length === 0) {
           replyContent +=
-            "\n*Note: For player accessibility, it is heavily recommended to add aliases.*";
+            "\n***Note:** For player accessibility, it is heavily recommended to add aliases.*";
         }
 
         if (poiActions.length === 0) {
           replyContent +=
-            '\n*Note: Without any actions, characters can only passively "view" the items. Add actions for improved interactability.*';
+            '\n***Note:** Without any actions, characters can only passively "view" the items. Add actions for improved interactability.*';
         }
 
         await interaction.reply({
