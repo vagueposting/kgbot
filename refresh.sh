@@ -1,7 +1,24 @@
 #!/bin/bash
+set -e
+
+clear
+echo "Cleaning local build..."
+rm -rf dist
+
+echo "Compiling TypeScript..."
 npx tsc
-echo "Nuking all commands..."
+
+# Prompt interactively for password without echoing characters
+read -s -p "Enter SFTP Password: " SFTP_PASSWORD
+echo ""
+
+export SFTP_PASSWORD
+
+echo "Uploading to server..."
+node dist/deploy-sftp.js
+
+echo "Updating Discord slash commands..."
 node dist/wipe-commands.js
-echo "Deploying fresh commands..."
 node dist/deploy-commands.js
-echo "Done! Commands will reflect upon bot activation."
+
+echo "Done!"

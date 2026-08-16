@@ -7,12 +7,14 @@ exports.ExtendedClient = void 0;
 const node_fs_1 = __importDefault(require("node:fs"));
 const node_path_1 = __importDefault(require("node:path"));
 const discord_js_1 = require("discord.js");
+const setup_1 = require("./db/setup");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 class ExtendedClient extends discord_js_1.Client {
     commands = new discord_js_1.Collection();
 }
 exports.ExtendedClient = ExtendedClient;
+(0, setup_1.setupDatabase)();
 const client = new ExtendedClient({ intents: [discord_js_1.GatewayIntentBits.Guilds] });
 client.once(discord_js_1.Events.ClientReady, (readyClient) => {
     console.log(`Ready! Logged in as ${readyClient.user.tag}`);
@@ -36,8 +38,9 @@ for (const folder of commandFolders) {
     }
 }
 function loadCommand(filePath) {
-    const command = require(filePath);
-    if ("data" in command && "execute" in command) {
+    const imported = require(filePath);
+    const command = imported.default || imported;
+    if (command && "data" in command && "execute" in command) {
         client.commands.set(command.data.name, command);
         console.log(`Loaded command: ${command.data.name}`);
     }
