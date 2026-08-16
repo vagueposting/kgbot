@@ -1,7 +1,6 @@
 const Client = require("ssh2-sftp-client");
 const sftpConfig = require("../.vscode/sftp.json");
 const path = require("path");
-<<<<<<< HEAD
 const fs = require("fs");
 
 // @ts-ignore
@@ -13,8 +12,6 @@ async function uploadIfExists(sftp, localPath, remotePath, filename) {
     console.log(`Skipping ${filename} (not found locally)`);
   }
 }
-=======
->>>>>>> 02b87df4a50ae7f8fed244c5c5bae4a94055d9eb
 
 async function deploy() {
   const sftp = new Client();
@@ -38,7 +35,6 @@ async function deploy() {
     console.log("Uploading fresh dist directory...");
     await sftp.uploadDir(path.join(__dirname, "../dist"), remoteDist);
 
-<<<<<<< HEAD
     // Upload config files
     await uploadIfExists(
       sftp,
@@ -61,8 +57,6 @@ async function deploy() {
       ".env",
     );
 
-=======
->>>>>>> 02b87df4a50ae7f8fed244c5c5bae4a94055d9eb
     console.log("Upload complete!");
   } catch (err) {
     console.error("SFTP Deployment failed:", err);

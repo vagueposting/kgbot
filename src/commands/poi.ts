@@ -7,6 +7,7 @@ import { convertToArray } from "../utils/convertToArray";
 import { POI } from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
+import { readAllPois, readPoiByCode } from "../utils/tableReaders";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -39,8 +40,15 @@ module.exports = {
             ),
         ),
     )
-    .addSubcommand((group) =>
-      group.setName("manage").setDescription("Manage POIs as a whole."),
+    .addSubcommandGroup((group) =>
+      group
+        .setName("manage")
+        .setDescription("Manage POIs as a whole.")
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("list")
+            .setDescription("View all points of interest in the game."),
+        ),
     )
     .addSubcommandGroup((group) =>
       group.setName("responses").setDescription("Manage POI response actions."),
@@ -51,6 +59,12 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
 
     if (group === "responses") {
+      switch (subcommand) {
+        case "list":
+          break;
+        default:
+          break;
+      }
       return;
     }
 
