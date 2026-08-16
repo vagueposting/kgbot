@@ -14,8 +14,8 @@
   "author": "vagueposting",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "build": "npx tsc",
+    "refresh": "bash ./refresh.sh"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
@@ -23,6 +23,11 @@
     "dotenv": "latest"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0"
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/ssh2-sftp-client": "^9.0.6",
+    "ssh2-sftp-client": "^12.1.1"
+  },
+  "allowScripts": {
+    "better-sqlite3": true
   }
 }

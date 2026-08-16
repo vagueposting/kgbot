@@ -8,6 +8,7 @@ import {
   Interaction,
   ChatInputCommandInteraction,
 } from "discord.js";
+import { setupDatabase } from "./db/setup";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -21,6 +22,8 @@ export interface Command {
 export class ExtendedClient extends Client {
   commands: Collection<string, Command> = new Collection();
 }
+
+setupDatabase();
 
 const client = new ExtendedClient({ intents: [GatewayIntentBits.Guilds] });
 
@@ -50,9 +53,11 @@ for (const folder of commandFolders) {
 }
 
 function loadCommand(filePath: string) {
-  const command = require(filePath);
+  const imported = require(filePath);
 
-  if ("data" in command && "execute" in command) {
+  const command = imported.default || imported;
+
+  if (command && "data" in command && "execute" in command) {
     client.commands.set(command.data.name, command);
     console.log(`Loaded command: ${command.data.name}`);
   } else {

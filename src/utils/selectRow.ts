@@ -1,10 +1,10 @@
-import { DatabaseSync } from "node:sqlite";
+import Database from "better-sqlite3";
 
 export function selectRow<T>(
   table: string,
   filter: Record<string, string | number | boolean>,
 ) {
-  const db = new DatabaseSync("../db/game.db");
+  const db = new Database("../db/game.db");
 
   const keys = Object.keys(filter);
 

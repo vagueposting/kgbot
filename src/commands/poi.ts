@@ -1,8 +1,12 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
-import { convertToArray } from "./utility/convertToArray";
+import {
+  SlashCommandBuilder,
+  ChatInputCommandInteraction,
+  MessageFlags,
+} from "discord.js";
+import { convertToArray } from "../utils/convertToArray";
 import { POI } from "../types/POItypes";
-import Database from "better-sqlite3";
-import { generateRandomString } from "./utility/generateRandomString";
+import { generateRandomString } from "../utils/generateRandomString";
+import { getDb } from "../db/setup";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -35,9 +39,8 @@ module.exports = {
             ),
         ),
     )
-    .addSubcommand(
-      (group) =>
-        group.setName("manage").setDescription("Manage POIs as a whole."), // TODO: add subcommand to read a POI.
+    .addSubcommand((group) =>
+      group.setName("manage").setDescription("Manage POIs as a whole."),
     )
     .addSubcommandGroup((group) =>
       group.setName("responses").setDescription("Manage POI response actions."),
@@ -48,12 +51,10 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
 
     if (group === "responses") {
-      // logic for response handling
       return;
     }
 
     if (group === "manage") {
-      // logic for group management
       return;
     }
 
@@ -70,13 +71,12 @@ module.exports = {
 
         const poi = new POI(poiName, poiAliases, poiActions);
 
-        const db = new Database("../db/game.db");
+        const db = getDb();
         const insertStmt = db.prepare(
           "INSERT INTO poi (code, data) VALUES (?, ?)",
         );
         const randomID = generateRandomString(5);
         insertStmt.run(randomID, poi.toJSON());
-        db.close();
 
         let replyContent = `Successfully created **${poi.name}** with ID code **${randomID}**.`;
 
@@ -92,13 +92,12 @@ module.exports = {
 
         await interaction.reply({
           content: replyContent,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
 
         db.close();
         break;
       }
     }
-    return;
   },
 };
