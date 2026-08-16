@@ -1,8 +1,8 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import { convertToArray } from "./utility/convertToArray";
-import { generateRandomString } from "./utility/generateRandomString";
 import { POI } from "../types/POItypes";
 import { DatabaseSync } from "node:sqlite";
+import { generateRandomString } from "./utility/generateRandomString";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -35,8 +35,9 @@ module.exports = {
             ),
         ),
     )
-    .addSubcommand((group) =>
-      group.setName("manage").setDescription("Manage POIs as a whole."),
+    .addSubcommand(
+      (group) =>
+        group.setName("manage").setDescription("Manage POIs as a whole."), // TODO: add subcommand to read a POI.
     )
     .addSubcommandGroup((group) =>
       group.setName("responses").setDescription("Manage POI response actions."),
@@ -71,12 +72,13 @@ module.exports = {
 
         const db = new DatabaseSync("../db/game.db");
         const insertStmt = db.prepare(
-          "INSERT INTO poi (name, data) VALUES (?, ?)",
+          "INSERT INTO poi (code, data) VALUES (?, ?)",
         );
-        insertStmt.run(poi.name, poi.toJSON());
+        const randomID = generateRandomString(5);
+        insertStmt.run(randomID, poi.toJSON());
         db.close();
 
-        let replyContent = `Successfully created **${poi.name}**.`;
+        let replyContent = `Successfully created **${poi.name}** with ID code **${randomID}**.`;
 
         if (poiAliases.length === 0) {
           replyContent +=
@@ -95,5 +97,6 @@ module.exports = {
         break;
       }
     }
+    return;
   },
 };

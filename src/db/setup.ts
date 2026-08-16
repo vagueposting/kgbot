@@ -5,7 +5,7 @@ const db = new DatabaseSync("./game.db");
 const createTableQuery = `
     CREATE TABLE IF NOT EXISTS poi (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL,
+    code TEXT UNIQUE NOT NULL,
     data TEXT NOT NULL
     )
 `;
