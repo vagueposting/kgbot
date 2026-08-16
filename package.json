@@ -18,7 +18,11 @@
     "refresh": "bash ./refresh.sh"
   },
   "dependencies": {
+<<<<<<< HEAD
     "better-sqlite3": "^11.3.0",
+=======
+    "better-sqlite3": "^11.8.0",
+>>>>>>> 02b87df4a50ae7f8fed244c5c5bae4a94055d9eb
     "discord.js": "latest",
     "dotenv": "latest",
     "ts-node": "^10.9.2",
@@ -30,8 +34,12 @@
     "ssh2-sftp-client": "^12.1.1"
   },
   "allowScripts": {
+<<<<<<< HEAD
     "better-sqlite3": true,
     "cpu-features": true,
     "ssh2": true
+=======
+    "better-sqlite3": true
+>>>>>>> 02b87df4a50ae7f8fed244c5c5bae4a94055d9eb
   }
 }
