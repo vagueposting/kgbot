@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import { convertToArray } from "./utility/convertToArray";
 import { POI } from "../types/POItypes";
-import { DatabaseSync } from "node:sqlite";
+import Database from "better-sqlite3";
 import { generateRandomString } from "./utility/generateRandomString";
 
 module.exports = {
@@ -70,7 +70,7 @@ module.exports = {
 
         const poi = new POI(poiName, poiAliases, poiActions);
 
-        const db = new DatabaseSync("../db/game.db");
+        const db = new Database("../db/game.db");
         const insertStmt = db.prepare(
           "INSERT INTO poi (code, data) VALUES (?, ?)",
         );
@@ -94,6 +94,8 @@ module.exports = {
           content: replyContent,
           ephemeral: true,
         });
+
+        db.close();
         break;
       }
     }

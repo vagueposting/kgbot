@@ -1,6 +1,6 @@
-import { DatabaseSync } from "node:sqlite";
+import Database from "better-sqlite3";
 
-const db = new DatabaseSync("./game.db");
+const db = new Database("./game.db");
 
 const createTableQuery = `
     CREATE TABLE IF NOT EXISTS poi (

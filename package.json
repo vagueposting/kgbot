@@ -18,7 +18,11 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "better-sqlite3": "^13.0.3",
     "discord.js": "latest",
     "dotenv": "latest"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
   }
 }
