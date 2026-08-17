@@ -87,8 +87,12 @@ module.exports = {
                   .setTitle(`Points of Interest`)
                   .setColor("Yellow");
 
-                // TODO: add details for each POI in the description
-                const description = chunk.map((p) => `${p.code}`).join("\n");
+                const description = chunk
+                  .map(
+                    (p) =>
+                      `### ${p.name} - *${p.code}*\n**Aliases:** ${(p.aliases ?? []).join(", ") || "None"}\n**Responses:**\n${Object.keys(p.responses).join(" , ")}`,
+                  )
+                  .join("\n");
                 embed.setDescription(description);
 
                 return embed;

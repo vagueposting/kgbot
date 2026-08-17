@@ -70,8 +70,8 @@ export class POI {
     const poi = new POI(
       parsed.name,
       row.code,
-      parsed.aliases,
-      parsed.responses,
+      parsed.aliases ?? [],
+      parsed.responses ?? [],
     );
     poi.id = row.id;
 
