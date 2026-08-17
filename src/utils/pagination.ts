@@ -1,4 +1,4 @@
-import { Embed, EmbedBuilder } from "discord.js";
+import { Embed, EmbedBuilder, MessageFlags } from "discord.js";
 
 const {
   ActionRowBuilder,
@@ -9,10 +9,11 @@ const {
   CommandInteraction,
 } = require("discord.js");
 
+// split an array into multiple arrays to paginate them
 function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   const chunks: T[][] = [];
 
-  for (let i = 0; i < array.length; i++) {
+  for (let i = 0; i < array.length; i += chunkSize) {
     chunks.push(array.slice(i, i + chunkSize));
   }
 
@@ -24,8 +25,8 @@ function createPagesFromData<T>(
   chunkSize: number,
   pageBuilder: (
     chunk: T[],
-    pageIndex: number,
-    totalPages: number,
+    pageIndex?: number,
+    totalPages?: number,
   ) => EmbedBuilder,
 ): EmbedBuilder[] {
   const chunks = chunkArray(data, chunkSize);
@@ -47,8 +48,8 @@ async function pagination(
     if (typeof interactionOrMessage.reply === "function") {
       return await interactionOrMessage.reply({
         embeds: [pages[0]],
-        fetchReply: true,
-        ephemeral: ephemeral, // Add ephemeral option
+        withResponse: true,
+        flags: ephemeral ? MessageFlags.Ephemeral : undefined,
       });
     } else {
       return await interactionOrMessage.channel.send({ embeds: [pages[0]] });
@@ -77,27 +78,24 @@ async function pagination(
   const isInteraction = typeof interactionOrMessage.reply === "function";
 
   if (isInteraction) {
+    const payload = {
+      embeds: [
+        pages[currentPage].setFooter({
+          text: `Page ${currentPage + 1} of ${pages.length}`,
+        }),
+      ],
+      components: [buttonRow],
+      flags: ephemeral ? MessageFlags.Ephemeral : undefined,
+    };
+
     if (interactionOrMessage.deferred || interactionOrMessage.replied) {
-      responseMessage = await interactionOrMessage.editReply({
-        embeds: [
-          pages[currentPage].setFooter({
-            text: `Page ${currentPage + 1} of ${pages.length}`,
-          }),
-        ],
-        components: [buttonRow],
-        fetchReply: true,
-      });
+      responseMessage = await interactionOrMessage.editReply(payload);
     } else {
-      responseMessage = await interactionOrMessage.reply({
-        embeds: [
-          pages[currentPage].setFooter({
-            text: `Page ${currentPage + 1} of ${pages.length}`,
-          }),
-        ],
-        components: [buttonRow],
-        fetchReply: true,
-        ephemeral: ephemeral, // Add ephemeral option
+      const response = await interactionOrMessage.reply({
+        ...payload,
+        withResponse: true,
       });
+      responseMessage = response.resource?.message;
     }
   } else {
     responseMessage = await interactionOrMessage.channel.send({
@@ -109,6 +107,8 @@ async function pagination(
       components: [buttonRow],
     });
   }
+
+  if (!responseMessage) return;
 
   const userId = isInteraction
     ? interactionOrMessage.user.id
@@ -161,14 +161,16 @@ async function pagination(
   });
 }
 
-async function paginateData<T>(
+// bundles createPagesFromData() and pagination()
+// to paginate one big array
+export async function paginateData<T>(
   interactionOrMessage: typeof CommandInteraction,
   data: T[],
   chunkSize: number,
   pageBuilder: (
     chunk: T[],
-    pageIndex: number,
-    totalPages: number,
+    pageIndex?: number,
+    totalPages?: number,
   ) => EmbedBuilder,
   timeout = 60000,
   ephemeral = false,
@@ -176,5 +178,3 @@ async function paginateData<T>(
   const pages = createPagesFromData(data, chunkSize, pageBuilder);
   return pagination(interactionOrMessage, pages, timeout, ephemeral);
 }
-
-module.exports = { pagination, paginateData, chunkArray, createPagesFromData };

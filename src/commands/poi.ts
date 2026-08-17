@@ -2,12 +2,14 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   MessageFlags,
+  EmbedBuilder,
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
-import { POI } from "../types/POItypes";
+import { POI, POIRow } from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
 import { readAllPois, readPoiByCode } from "../utils/tableReaders";
+import { paginateData } from "../utils/pagination";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -59,16 +61,50 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
 
     if (group === "responses") {
-      switch (subcommand) {
-        case "list":
-          break;
-        default:
-          break;
-      }
       return;
     }
 
     if (group === "manage") {
+      switch (subcommand) {
+        case "list":
+          try {
+            const rawPOIData = readAllPois();
+
+            if (rawPOIData.length === 0) {
+              await interaction.reply({
+                content:
+                  "**Error:** No points of interest found in the database.",
+                flags: MessageFlags.Ephemeral,
+              });
+              break;
+            }
+            await paginateData(
+              interaction,
+              rawPOIData,
+              5,
+              (chunk: POI[]): EmbedBuilder => {
+                const embed = new EmbedBuilder()
+                  .setTitle(`Points of Interest`)
+                  .setColor("Yellow");
+
+                // TODO: add details for each POI in the description
+                const description = chunk.map((p) => `${p.code}`).join("\n");
+                embed.setDescription(description);
+
+                return embed;
+              },
+            );
+          } catch (error) {
+            console.error("Error listing POIs:", error);
+            await interaction.reply({
+              content: "An error occurred while fetching POIs.",
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+          break;
+        default:
+          break;
+      }
       return;
     }
 
@@ -83,14 +119,15 @@ module.exports = {
           interaction.options.getString("poi_actions") ?? "",
         );
 
-        const poi = new POI(poiName, poiAliases, poiActions);
+        const randomID = generateRandomString(5);
+
+        const poi = new POI(poiName, randomID, poiAliases, poiActions);
 
         const db = getDb();
         const insertStmt = db.prepare(
           "INSERT INTO poi (code, data) VALUES (?, ?)",
         );
-        const randomID = generateRandomString(5);
-        insertStmt.run(randomID, poi.toJSON());
+        insertStmt.run(poi.code, poi.toJSON());
 
         let replyContent = `Successfully created **${poi.name}** with ID code **${randomID}**.`;
 

@@ -7,6 +7,7 @@ import {
   GatewayIntentBits,
   Interaction,
   ChatInputCommandInteraction,
+  MessageFlags,
 } from "discord.js";
 import { setupDatabase } from "./db/setup";
 import dotenv from "dotenv";
@@ -83,12 +84,12 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({
         content: "There was an error executing this command!",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     } else {
       await interaction.reply({
         content: "There was an error executing this command!",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   }

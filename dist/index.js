@@ -64,13 +64,13 @@ client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({
                 content: "There was an error executing this command!",
-                ephemeral: true,
+                flags: discord_js_1.MessageFlags.Ephemeral,
             });
         }
         else {
             await interaction.reply({
                 content: "There was an error executing this command!",
-                ephemeral: true,
+                flags: discord_js_1.MessageFlags.Ephemeral,
             });
         }
     }

@@ -12,27 +12,31 @@ export interface POIResponse {
 
 export interface POIRow {
   id: number;
-  name: string;
+  code: string;
   data: string;
 }
 
 interface POIJsonPayload {
+  name: string;
   aliases: string[];
   responses: Record<string, POIResponse>;
 }
 
 export class POI {
   id?: number;
+  code: string;
   name: string;
   aliases: string[];
   responses: Record<string, POIResponse> = {};
 
   constructor(
     name: string,
+    code: string,
     aliases: string[] = [],
     actionsOrResponses: string[] | Record<string, POIResponse> = [],
   ) {
     this.name = name;
+    this.code = code;
     this.aliases = aliases;
 
     if (Array.isArray(actionsOrResponses)) {
@@ -53,6 +57,7 @@ export class POI {
 
   toJSON(): string {
     const payload: POIJsonPayload = {
+      name: this.name,
       aliases: this.aliases,
       responses: this.responses,
     };
@@ -62,7 +67,12 @@ export class POI {
   static fromRow(row: POIRow): POI {
     const parsed = JSON.parse(row.data) as POIJsonPayload;
 
-    const poi = new POI(row.name, parsed.aliases, parsed.responses);
+    const poi = new POI(
+      parsed.name,
+      row.code,
+      parsed.aliases,
+      parsed.responses,
+    );
     poi.id = row.id;
 
     return poi;
