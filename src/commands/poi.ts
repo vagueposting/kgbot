@@ -1,11 +1,12 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
+  AutocompleteInteraction,
   MessageFlags,
   EmbedBuilder,
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
-import { POI, POIRow } from "../types/POItypes";
+import { POI } from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
 import { readAllPois, readPoiByCode } from "../utils/tableReaders";
@@ -67,8 +68,49 @@ module.exports = {
         ),
     )
     .addSubcommandGroup((group) =>
-      group.setName("responses").setDescription("Manage POI response actions."),
+      group
+        .setName("responses")
+        .setDescription("Manage POI response actions.")
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("modify")
+            .setDescription("Edit a response on a PoI")
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription("5-character PoI code")
+                .setAutocomplete(true)
+                .setRequired(true),
+            )
+            .addStringOption(
+              (option) =>
+                option
+                  .setName("response")
+                  .setDescription("Response to modify")
+                  .setAutocomplete(true)
+                  .setRequired(true), // TODO: Add option to change the response object
+            ),
+        ),
     ),
+
+  async autocomplete(interaction: AutocompleteInteraction) {
+    const group = interaction.options.getSubcommandGroup(false);
+    const subcommand = interaction.options.getSubcommand(false);
+
+    if (group === "responses" && subcommand === "modify") {
+      const focusedOption = interaction.options.getFocused(true);
+      // TODO: write SQLite queries.
+      if (focusedOption.name === "poi_code") {
+        // const choices = query SQLite for matching codes
+        // await interaction.respond(choices);
+      } else if ((focusedOption.name = "response")) {
+        // Query SQLite for keys matching the code
+        // await interaction.respond(choices)
+      }
+    }
+
+    // put other shit here
+  },
 
   async execute(interaction: ChatInputCommandInteraction) {
     const group = interaction.options.getSubcommandGroup(false);
