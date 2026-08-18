@@ -50,6 +50,20 @@ module.exports = {
           subcommand
             .setName("list")
             .setDescription("View all points of interest in the game."),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("delete")
+            .setDescription(
+              "Delete a subcommand from the database. ⚠ THIS IS PERMANENT.",
+            )
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription(
+                  "The unique 5-character code of the PoI you want to delete.",
+                ),
+            ),
         ),
     )
     .addSubcommandGroup((group) =>
@@ -106,6 +120,20 @@ module.exports = {
             });
           }
           break;
+        case "delete":
+          const target = interaction.options.getString("poi_code");
+          const db = getDb();
+          const deleterStmt = db.prepare(
+            `DELETE FROM poi WHERE code = ? RETURNING *`,
+          );
+          const deletedPOI = deleterStmt.get(target);
+
+          if (deletedPOI) {
+            console.log(`PoI with the code ${target} has been deleted.`);
+          } else {
+            console.error(`PoI with the code ${target} does not exist.`);
+          }
+          break;
         default:
           break;
       }
@@ -129,7 +157,7 @@ module.exports = {
 
         const db = getDb();
         const insertStmt = db.prepare(
-          "INSERT INTO poi (code, data) VALUES (?, ?)",
+          `INSERT INTO poi (code, data) VALUES (?, ?)`,
         );
         insertStmt.run(poi.code, poi.toJSON());
 

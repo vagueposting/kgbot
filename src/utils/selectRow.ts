@@ -23,4 +23,6 @@ export function selectRow<T>(
   const query = `SELECT * FROM ${safeTable} WHERE ${safeColumn} = ? LIMIT 1`;
 
   const row = db.prepare(query).get(safeValue);
+
+  return row;
 }
