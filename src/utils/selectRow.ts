@@ -1,10 +1,10 @@
-import Database from "better-sqlite3";
+import { getDb } from "../db/setup";
 
 export function selectRow<T>(
   table: string,
   filter: Record<string, string | number | boolean>,
 ) {
-  const db = new Database("../db/game.db");
+  const db = getDb();
 
   const keys = Object.keys(filter);
 
