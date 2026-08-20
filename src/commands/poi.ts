@@ -100,6 +100,7 @@ module.exports = {
     if (group === "responses" && subcommand === "modify") {
       const focusedOption = interaction.options.getFocused(true);
       // TODO: write SQLite queries.
+      const db = getDb();
       if (focusedOption.name === "poi_code") {
         // const choices = query SQLite for matching codes
         // await interaction.respond(choices);

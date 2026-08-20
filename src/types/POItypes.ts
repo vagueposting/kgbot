@@ -1,14 +1,6 @@
+import { fail } from "node:assert";
 import { Approaches } from "./approaches";
 import { SkillTags } from "./skilltags";
-
-export interface POIResponse {
-  base: string;
-  roll_dc?: number;
-  approach?: Approaches[];
-  skill_tag?: SkillTags[];
-  success?: string;
-  failure?: string;
-}
 
 export interface POIRow {
   id: number;
@@ -22,38 +14,77 @@ interface POIJsonPayload {
   responses: Record<string, POIResponse>;
 }
 
+type ValidStates = string | number | boolean;
+type POIState = Record<string, ValidStates>;
+type POIMethod = (
+  currentState: POIState,
+  first: ValidStates,
+  ...others: ValidStates[]
+) => ValidStates;
+
+export class POIResponse {
+  base: string;
+  roll_dc?: number;
+  approach?: Approaches[];
+  skill_tag?: SkillTags[];
+  success?: string;
+  failure?: string;
+  methods: Record<string, POIMethod> = {};
+
+  constructor(
+    base: string,
+    roll_dc = 0,
+    approach: Approaches[] = [],
+    skill_tag: SkillTags[] = [],
+    success = "This response doesn't have a success mode.",
+    failure = "This response doesn't have a failure mode.",
+  ) {
+    this.base = base;
+    this.roll_dc = roll_dc;
+    this.approach = approach;
+    this.skill_tag = skill_tag;
+    this.success = success;
+    this.failure = failure;
+  }
+
+  addMethod(name: string, method: POIMethod) {
+    this.methods[name] = method;
+  }
+}
+
+/* TODO: Rewrite POI to include:
+  - channel = string
+  - state = Record<string, ValidState>
+  - the new POIResponse class under responses
+*/
 export class POI {
   id?: number;
   code: string;
   name: string;
   aliases: string[];
+  channel: string;
+  state: POIState = {};
   responses: Record<string, POIResponse> = {};
 
   constructor(
     name: string,
     code: string,
+    channel: string,
     aliases: string[] = [],
     actionsOrResponses: string[] | Record<string, POIResponse> = [],
   ) {
     this.name = name;
     this.code = code;
+    this.channel = channel;
     this.aliases = aliases;
-
-    if (Array.isArray(actionsOrResponses)) {
-      for (const action of actionsOrResponses) {
-        this.responses[action] = { base: "" };
-      }
-    } else {
-      this.responses = actionsOrResponses;
-    }
   }
 
-  modifyResponse(action: string, newData: POIResponse): void {
+  /*   modifyResponse(action: string, newData: POIResponse): void {
     this.responses[action] = {
       ...this.responses[action],
       ...newData,
     };
-  }
+  } */
 
   toJSON(): string {
     const payload: POIJsonPayload = {
@@ -64,7 +95,7 @@ export class POI {
     return JSON.stringify(payload);
   }
 
-  static fromRow(row: POIRow): POI {
+  /*   static fromRow(row: POIRow): POI {
     const parsed = JSON.parse(row.data) as POIJsonPayload;
 
     const poi = new POI(
@@ -76,5 +107,5 @@ export class POI {
     poi.id = row.id;
 
     return poi;
-  }
+  } */
 }
