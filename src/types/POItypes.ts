@@ -10,6 +10,7 @@ export interface POIRow {
 
 interface POIJsonPayload {
   name: string;
+  channel: string;
   aliases: string[];
   responses: Record<string, POIResponse>;
 }
@@ -20,7 +21,7 @@ type POIMethod = (
   currentState: POIState,
   first: ValidStates,
   ...others: ValidStates[]
-) => ValidStates;
+) => POIState;
 
 export class POIResponse {
   base: string;
@@ -79,33 +80,45 @@ export class POI {
     this.aliases = aliases;
   }
 
-  /*   modifyResponse(action: string, newData: POIResponse): void {
-    this.responses[action] = {
-      ...this.responses[action],
-      ...newData,
-    };
-  } */
+  execResponseMethod(
+    responseKey: string,
+    methodName: string,
+    firstArg: ValidStates,
+    ...otherArgs: ValidStates[]
+  ) {
+    const response = this.responses[responseKey];
+
+    if (!response) throw new Error(`Response ${responseKey} not found.`);
+
+    const method = response.methods[methodName];
+
+    if (!method) throw new Error(`Method ${methodName} not found.`);
+
+    this.state = method(this.state, firstArg, ...otherArgs);
+  }
 
   toJSON(): string {
     const payload: POIJsonPayload = {
       name: this.name,
+      channel: this.channel,
       aliases: this.aliases,
       responses: this.responses,
     };
     return JSON.stringify(payload);
   }
 
-  /*   static fromRow(row: POIRow): POI {
+  static fromRow(row: POIRow): POI {
     const parsed = JSON.parse(row.data) as POIJsonPayload;
 
     const poi = new POI(
       parsed.name,
       row.code,
+      parsed.channel,
       parsed.aliases ?? [],
-      parsed.responses ?? [],
+      parsed.responses ?? {},
     );
     poi.id = row.id;
 
     return poi;
-  } */
+  }
 }
