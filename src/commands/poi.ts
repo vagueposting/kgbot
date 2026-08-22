@@ -9,7 +9,7 @@ import { convertToArray } from "../utils/convertToArray";
 import { POI, TruePOIConstructor } from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
-import { readAllPois, readPoiByCode } from "../utils/tableReaders";
+import { readAllPois } from "../utils/tableReaders";
 import { paginateData } from "../utils/pagination";
 import { getPOICodes } from "../utils/autocomplete/poiCode";
 
@@ -198,7 +198,9 @@ module.exports = {
       switch (subcommand) {
         case "list":
           try {
-            const rawPOIData = readAllPois();
+            if (!interaction.guild) return;
+
+            const rawPOIData = await readAllPois(interaction.guild);
 
             if (rawPOIData.length === 0) {
               await interaction.reply({
