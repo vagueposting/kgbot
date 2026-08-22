@@ -9,7 +9,7 @@ export interface POIRow {
   data: string;
 }
 
-interface POIJsonPayload {
+export interface POIJsonPayload {
   name: string;
   channel: string;
   guildId: string;
@@ -17,14 +17,14 @@ interface POIJsonPayload {
   responses: Record<string, POIResponse>;
 }
 
-type TruePOIConstructor = {
+export interface TruePOIConstructor {
   name: string;
   code: string;
   channel: string;
   guild: Guild | null;
   aliases: string[];
   actionsOrResponses: string[] | Record<string, POIResponse>;
-};
+}
 
 type ValidStates = string | number | boolean;
 type POIState = Record<string, ValidStates>;

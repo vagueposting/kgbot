@@ -6,7 +6,7 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
-import { POI } from "../types/POItypes";
+import { POI, TruePOIConstructor, POIJsonPayload } from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
 import { readAllPois, readPoiByCode } from "../utils/tableReaders";
@@ -27,6 +27,13 @@ module.exports = {
             .setName("poi_name")
             .setDescription("Name of the point of interest")
             .setRequired(true),
+        )
+        .addStringOption((option) =>
+          option
+            .setName("poi_channel")
+            .setDescription("Channel to place the point of interest in")
+            .setRequired(true)
+            .setAutocomplete(true),
         )
         .addStringOption((option) =>
           option
@@ -96,17 +103,47 @@ module.exports = {
   async autocomplete(interaction: AutocompleteInteraction) {
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand(false);
+    const db = getDb();
 
     if (group === "responses" && subcommand === "modify") {
       const focusedOption = interaction.options.getFocused(true);
-      // TODO: write SQLite queries.
-      const db = getDb();
       if (focusedOption.name === "poi_code") {
-        // const choices = query SQLite for matching codes
-        // await interaction.respond(choices);
+        const choices = db
+          .prepare<[], { code: string }>(/* sql */ `SELECT code FROM poi`)
+          .all()
+          .map((row) => ({
+            name: row.code,
+            value: row.code,
+          }))
+          .slice(0, 25);
+
+        await interaction.respond(choices);
       } else if ((focusedOption.name = "response")) {
-        // Query SQLite for keys matching the code
-        // await interaction.respond(choices)
+        const activePOI = interaction.options.getString("poi_code");
+
+        if (!activePOI) {
+          return { choices: [] };
+        }
+
+        const result = db
+          .prepare<
+            string[],
+            { data: string }
+          >(/* sql */ `SELECT data FROM poi WHERE code = ?`)
+          .get(activePOI);
+
+        if (!result) {
+          return { choices: [] };
+        }
+
+        const choices = Object.keys(JSON.parse(result.data)).map(
+          (key: string) => ({
+            name: key,
+            value: key,
+          }),
+        );
+
+        await interaction.respond(choices);
       }
     }
 
@@ -185,33 +222,36 @@ module.exports = {
 
     switch (subcommand) {
       case "create": {
-        const poiName = interaction.options.getString("poi_name", true);
+        const poiDetails: TruePOIConstructor = {
+          name: interaction.options.getString("poi_name", true),
+          code: generateRandomString(5),
+          channel: interaction.options.getString("poi_channel", true),
+          // TODO: actually add channel option
+          guild: interaction.guild,
+          aliases: convertToArray(
+            interaction.options.getString("poi_aliases") ?? "",
+          ),
+          actionsOrResponses: convertToArray(
+            interaction.options.getString("poi_actions") ?? "",
+          ),
+        };
 
-        const poiAliases = convertToArray(
-          interaction.options.getString("poi_aliases") ?? "",
-        );
-        const poiActions = convertToArray(
-          interaction.options.getString("poi_actions") ?? "",
-        );
-
-        const randomID = generateRandomString(5);
-
-        const poi = new POI(poiName, randomID, poiAliases, poiActions);
+        const poi = await POI.create(poiDetails);
 
         const db = getDb();
         const insertStmt = db.prepare(
           `INSERT INTO poi (code, data) VALUES (?, ?)`,
         );
-        insertStmt.run(poi.code, poi.toJSON());
+        insertStmt.run(poi.code, poi.toJSON(interaction));
 
-        let replyContent = `Successfully created **${poi.name}** with ID code **${randomID}**.`;
+        let replyContent = `Successfully created **${poi.name}** with ID code **${poiDetails.code}**.`;
 
-        if (poiAliases.length === 0) {
+        if (poiDetails.aliases.length === 0) {
           replyContent +=
             "\n***Note:** For player accessibility, it is heavily recommended to add aliases.*";
         }
 
-        if (poiActions.length === 0) {
+        if (poiDetails.actionsOrResponses.length === 0) {
           replyContent +=
             '\n***Note:** Without any actions, characters can only passively "view" the items. Add actions for improved interactability.*';
         }
