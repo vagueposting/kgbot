@@ -30,7 +30,7 @@ module.exports = {
         )
         .addStringOption((option) =>
           option
-            .setName("poi_channel")
+            .setName("channel")
             .setDescription("Channel to place the point of interest in")
             .setRequired(true)
             .setAutocomplete(true),
@@ -63,7 +63,7 @@ module.exports = {
           subcommand
             .setName("delete")
             .setDescription(
-              "Delete a subcommand from the database. ⚠ THIS IS PERMANENT.",
+              "Deletes a subcommand from the database. ⚠ THIS IS PERMANENT.",
             )
             .addStringOption((option) =>
               option
@@ -104,6 +104,43 @@ module.exports = {
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand(false);
     const db = getDb();
+
+    if (subcommand === "create") {
+      const focusedOption = interaction.options.getFocused(true);
+
+      if (focusedOption.name === "channel") {
+        if (!interaction.guild) return interaction.respond([]);
+
+        const validCategories = db
+          .prepare<[], { id: string }>(/* sql */ `SELECT id FROM rp_categories`)
+          .all()
+          .map((row) => row.id);
+
+        if (validCategories.length === 0) return interaction.respond([]);
+
+        const choices = interaction.guild.channels.cache
+          .filter((channel) => {
+            if (!channel.isTextBased()) return false;
+
+            const categoryID = channel.isThread()
+              ? (channel.parent?.parentId ?? channel.parentId)
+              : channel.parentId;
+
+            return (
+              typeof categoryID === "string" &&
+              validCategories.includes(categoryID)
+            );
+          })
+          .map((channel) => ({
+            name: `#${channel.name}`,
+            value: channel.id,
+          }))
+          .filter((choice) => choice.name && choice.value)
+          .slice(0, 25);
+
+        await interaction.respond(choices);
+      }
+    }
 
     if (group === "responses" && subcommand === "modify") {
       const focusedOption = interaction.options.getFocused(true);
@@ -146,8 +183,6 @@ module.exports = {
         await interaction.respond(choices);
       }
     }
-
-    // put other shit here
   },
 
   async execute(interaction: ChatInputCommandInteraction) {
