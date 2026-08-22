@@ -6,11 +6,12 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
-import { POI, TruePOIConstructor, POIJsonPayload } from "../types/POItypes";
+import { POI, TruePOIConstructor } from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
 import { readAllPois, readPoiByCode } from "../utils/tableReaders";
 import { paginateData } from "../utils/pagination";
+import { getPOICodes } from "../utils/autocomplete/poiCode";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -70,7 +71,8 @@ module.exports = {
                 .setName("poi_code")
                 .setDescription(
                   "The unique 5-character code of the PoI you want to delete.",
-                ),
+                )
+                .setAutocomplete(true),
             ),
         ),
     )
@@ -142,19 +144,18 @@ module.exports = {
       }
     }
 
+    if (group === "manage" && subcommand === "delete") {
+      const focusedOption = interaction.options.getFocused(true);
+
+      if (focusedOption.name === "delete") {
+        await interaction.respond(getPOICodes(db));
+      }
+    }
+
     if (group === "responses" && subcommand === "modify") {
       const focusedOption = interaction.options.getFocused(true);
       if (focusedOption.name === "poi_code") {
-        const choices = db
-          .prepare<[], { code: string }>(/* sql */ `SELECT code FROM poi`)
-          .all()
-          .map((row) => ({
-            name: row.code,
-            value: row.code,
-          }))
-          .slice(0, 25);
-
-        await interaction.respond(choices);
+        await interaction.respond(getPOICodes(db));
       } else if ((focusedOption.name = "response")) {
         const activePOI = interaction.options.getString("poi_code");
 
@@ -261,7 +262,6 @@ module.exports = {
           name: interaction.options.getString("poi_name", true),
           code: generateRandomString(5),
           channel: interaction.options.getString("poi_channel", true),
-          // TODO: actually add channel option
           guild: interaction.guild,
           aliases: convertToArray(
             interaction.options.getString("poi_aliases") ?? "",
