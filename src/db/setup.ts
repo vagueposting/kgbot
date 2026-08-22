@@ -20,13 +20,13 @@ export function setupDatabase(): void {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT UNIQUE NOT NULL,
       data TEXT NOT NULL
-    )
+    );
 
     CREATE TABLE IF NOT EXISTS rp_categories (
       id TEXT UNIQUE NOT NULL
-    )
+    );
   `;
 
   db.exec(createTableQuery);
-  console.log("Database and POI table initialized!");
+  console.log("Database, POI table and Categories table initialized!");
 }
