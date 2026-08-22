@@ -58,13 +58,15 @@ module.exports = {
         .addSubcommand((subcommand) =>
           subcommand
             .setName("list")
-            .setDescription("View all points of interest in the game."),
+            .setDescription(
+              "GM command. View all points of interest in the game.",
+            ),
         )
         .addSubcommand((subcommand) =>
           subcommand
             .setName("delete")
             .setDescription(
-              "Deletes a subcommand from the database. ⚠ THIS IS PERMANENT.",
+              "GM command. Deletes a subcommand from the database. ⚠ THIS IS PERMANENT.",
             )
             .addStringOption((option) =>
               option
@@ -83,7 +85,7 @@ module.exports = {
         .addSubcommand((subcommand) =>
           subcommand
             .setName("modify")
-            .setDescription("Edit a response on a PoI")
+            .setDescription("GM command. Edit a response on a PoI")
             .addStringOption((option) =>
               option
                 .setName("poi_code")
