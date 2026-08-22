@@ -1,6 +1,7 @@
-import { fail } from "node:assert";
+import { getParentId } from "../utils/getParentId";
 import { Approaches } from "./approaches";
 import { SkillTags } from "./skilltags";
+import { CommandInteraction, Guild } from "discord.js";
 
 export interface POIRow {
   id: number;
@@ -11,9 +12,19 @@ export interface POIRow {
 interface POIJsonPayload {
   name: string;
   channel: string;
+  guildId: string;
   aliases: string[];
   responses: Record<string, POIResponse>;
 }
+
+type TruePOIConstructor = {
+  name: string;
+  code: string;
+  channel: string;
+  guild: Guild | null;
+  aliases: string[];
+  actionsOrResponses: string[] | Record<string, POIResponse>;
+};
 
 type ValidStates = string | number | boolean;
 type POIState = Record<string, ValidStates>;
@@ -53,31 +64,59 @@ export class POIResponse {
   }
 }
 
-/* TODO: Rewrite POI to include:
-  - channel = string
-  - state = Record<string, ValidState>
-  - the new POIResponse class under responses
-*/
 export class POI {
   id?: number;
   code: string;
   name: string;
   aliases: string[];
   channel: string;
+  guildId?: string;
   state: POIState = {};
   responses: Record<string, POIResponse> = {};
 
-  constructor(
+  private constructor(
     name: string,
     code: string,
     channel: string,
+    guildId: string,
     aliases: string[] = [],
     actionsOrResponses: string[] | Record<string, POIResponse> = [],
   ) {
     this.name = name;
     this.code = code;
     this.channel = channel;
+    this.guildId = guildId;
     this.aliases = aliases;
+
+    if (!Array.isArray(actionsOrResponses)) {
+      this.responses = actionsOrResponses;
+    }
+  }
+
+  static async create(obj: TruePOIConstructor): Promise<POI> {
+    const { name, code, channel, guild, aliases, actionsOrResponses } = obj;
+
+    // Check if guild exists (not a DM)
+    if (!guild) {
+      throw new Error("POI cannot be created in DMs");
+    }
+
+    const poi = new POI(
+      name,
+      code,
+      channel,
+      guild.id,
+      aliases,
+      actionsOrResponses,
+    );
+
+    const parentID = await getParentId(channel, guild);
+
+    if (parentID === "INVALID") {
+      throw new Error(`Cannot add POI in ${channel}`);
+    }
+
+    return poi;
   }
 
   execResponseMethod(
@@ -97,28 +136,31 @@ export class POI {
     this.state = method(this.state, firstArg, ...otherArgs);
   }
 
-  toJSON(): string {
+  toJSON(interaction: CommandInteraction): string {
     const payload: POIJsonPayload = {
       name: this.name,
       channel: this.channel,
+      guildId: this.guildId!,
       aliases: this.aliases,
       responses: this.responses,
     };
     return JSON.stringify(payload);
   }
 
-  static fromRow(row: POIRow): POI {
+  static async fromRow(row: POIRow, guild: Guild): Promise<POI> {
     const parsed = JSON.parse(row.data) as POIJsonPayload;
 
-    const poi = new POI(
-      parsed.name,
-      row.code,
-      parsed.channel,
-      parsed.aliases ?? [],
-      parsed.responses ?? {},
-    );
-    poi.id = row.id;
+    const poi = await POI.create({
+      name: parsed.name,
+      code: row.code,
+      channel: parsed.channel,
+      guild: guild,
+      aliases: parsed.aliases ?? [],
+      actionsOrResponses: parsed.responses ?? {},
+    });
 
+    poi.id = row.id;
+    poi.guildId = parsed.guildId;
     return poi;
   }
 }

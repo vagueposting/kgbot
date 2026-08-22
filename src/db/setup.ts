@@ -13,11 +13,15 @@ export function getDb(): Database.Database {
 
 export function setupDatabase(): void {
   const db = getDb();
-  const createTableQuery = `
+  const createTableQuery = /* sql */ `
     CREATE TABLE IF NOT EXISTS poi (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT UNIQUE NOT NULL,
       data TEXT NOT NULL
+    )
+
+    CREATE TABLE IF NOT EXISTS rp_categories (
+      id TEXT UNIQUE NOT NULL
     )
   `;
 
