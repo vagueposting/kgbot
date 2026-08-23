@@ -115,7 +115,7 @@ module.exports = {
       if (focusedOption.name === "channel") {
         if (!interaction.guild) return interaction.respond([]);
 
-        const validCategories = await getValidPOICategories(interaction.guild);
+        const validCategories = await getValidPOICategories();
 
         if (validCategories.length === 0) return interaction.respond([]);
 
@@ -189,10 +189,6 @@ module.exports = {
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand();
 
-    if (group === "responses") {
-      return;
-    }
-
     if (group === "manage") {
       switch (subcommand) {
         case "list":
@@ -257,6 +253,11 @@ module.exports = {
       return;
     }
 
+    if (group === "responses") {
+      // TODO: write ohmjs DSL
+      return;
+    }
+
     switch (subcommand) {
       case "create": {
         const poiDetails: TruePOIConstructor = {
@@ -276,9 +277,13 @@ module.exports = {
 
         const db = getDb();
         const insertStmt = db.prepare(
-          `INSERT INTO poi (code, data) VALUES (?, ?)`,
+          `INSERT INTO poi (code, category, data) VALUES (?, ?, ?)`,
         );
-        insertStmt.run(poi.code, poi.toJSON(interaction));
+        insertStmt.run(
+          poi.code,
+          interaction.guild?.channels.cache.get(poi.channel)!.parentId,
+          poi.toJSON(interaction),
+        );
 
         let replyContent = `Successfully created **${poi.name}** with ID code **${poiDetails.code}**.`;
 

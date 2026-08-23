@@ -4,11 +4,25 @@ import {
   AutocompleteInteraction,
   MessageFlags,
   EmbedBuilder,
-  SubscriptionManager,
   ChannelType,
+  GuildChannel,
 } from "discord.js";
 import { getDb } from "../db/setup";
-import { getValidPOICategories } from "../utils/tableReaders";
+import {
+  getValidPOICategories,
+  validatePOICategory,
+} from "../utils/tableReaders";
+import { countThreadsInCategory } from "../utils/countThreadsInCategory";
+import { paginateData } from "../utils/pagination";
+
+interface CategoryInfo {
+  name?: string;
+  id?: string;
+  channelCount?: number;
+  activeThreads?: number;
+  totalThreads?: number;
+  poiCount?: number;
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -85,9 +99,7 @@ module.exports = {
           if (focusedOption.name === "category") {
             if (!interaction.guild) return interaction.respond([]);
 
-            const validCategories = await getValidPOICategories(
-              interaction.guild,
-            );
+            const validCategories = await getValidPOICategories();
 
             const choices = validCategories.map((cat) => ({
               name: cat,
@@ -105,6 +117,164 @@ module.exports = {
   },
 
   async execute(interaction: ChatInputCommandInteraction) {
+    const group = interaction.options.getSubcommandGroup(false);
+    const subcommand = interaction.options.getSubcommand();
+
     // TODO: write runtime code for all the commands defined above.
+
+    if (group === "channels") {
+      const db = getDb();
+      switch (subcommand) {
+        case "add_category": {
+          const categoryToAdd = interaction.options.getString("category");
+          if (!categoryToAdd) return;
+
+          const category = interaction.guild?.channels.cache.get(categoryToAdd);
+
+          if (
+            category === undefined ||
+            category.type !== ChannelType.GuildCategory
+          )
+            return;
+
+          const { name, id } = category;
+
+          const isItThere = validatePOICategory(categoryToAdd);
+
+          if (isItThere === undefined) {
+            const insert = db
+              .prepare(/* sql */ `INSERT INTO rp_categories (id) VALUES (?)`)
+              .run(categoryToAdd);
+
+            await interaction.reply({
+              content: `Added category **${name}** with ID \`${id}\` to valid categories list.`,
+            });
+          } else {
+            await interaction.reply({
+              content: `You already have the category **${name}** added to your valid list! No changes made.`,
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+          break;
+        }
+        case "remove": {
+          const categoryToRemove = interaction.options.getString("category");
+
+          if (!categoryToRemove) return;
+
+          const category =
+            interaction.guild?.channels.cache.get(categoryToRemove);
+
+          if (
+            category === undefined ||
+            category.type !== ChannelType.GuildCategory
+          )
+            return;
+
+          const { name, id } = category;
+
+          const isItThere = await validatePOICategory(categoryToRemove);
+
+          if (isItThere) {
+            const remove = db
+              .prepare(
+                /* sql */ `DELETE FROM rp_categories
+              WHERE id = ?`,
+              )
+              .run(categoryToRemove);
+
+            await interaction.reply({
+              content: `Removed category **${name}** with ID \`${id}\`.`,
+            });
+          } else {
+            await interaction.reply({
+              content: `The category **${name}** with ID \`${id}\` is not in the RP category list. No changes made.`,
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+          break;
+        }
+        case "list": {
+          const catDump = await getValidPOICategories();
+
+          try {
+            const categories = await Promise.all(
+              catDump.map(async (category: string): Promise<CategoryInfo> => {
+                const catData = interaction.guild?.channels.cache.get(category);
+                if (catData === undefined) return {};
+
+                const { name, id } = catData;
+
+                const regularChannelCount =
+                  interaction.guild!.channels.cache.filter(
+                    (c) =>
+                      c.parentId === id && c.type === ChannelType.GuildText,
+                  ).size;
+
+                const threadInfo = await countThreadsInCategory(
+                  interaction.guild!,
+                  id,
+                );
+
+                const howManyPOIs = db
+                  .prepare(
+                    `SELECT code FROM poi
+        WHERE category = ?`,
+                  )
+                  .all(id).length;
+
+                return {
+                  name: name,
+                  id: id,
+                  channelCount: regularChannelCount,
+                  activeThreads: threadInfo.active,
+                  totalThreads: threadInfo.total,
+                  poiCount: howManyPOIs,
+                };
+              }),
+            );
+
+            if (categories.length === 0) {
+              await interaction.reply({
+                content: "**Error:** No RP categories found in the database.",
+                flags: MessageFlags.Ephemeral,
+              });
+              break;
+            }
+
+            await paginateData(
+              interaction,
+              categories,
+              5,
+              (chunk: CategoryInfo[]): EmbedBuilder => {
+                const embed = new EmbedBuilder()
+                  .setTitle("Valid RP Categories")
+                  .setColor("Green");
+
+                const description = chunk
+                  .map(
+                    (cat) =>
+                      `### ${cat.name} - \`${cat.id}\`
+                  \n⠀**No. of channels:** ${cat.channelCount}
+                  \n **Thread activity:** ${cat.activeThreads} / ${cat.totalThreads}
+                  \n **POI Count:** ${cat.poiCount}`,
+                  )
+                  .join("\n");
+
+                embed.setDescription(description);
+
+                return embed;
+              },
+            );
+          } catch (error) {
+            console.error("Error listing categories:", error);
+            await interaction.reply({
+              content: "An error occurred while fetching category data.",
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+        }
+      }
+    }
   },
 };

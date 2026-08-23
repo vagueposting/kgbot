@@ -15,7 +15,7 @@ export async function readPoiByCode(code: string): Promise<POI | undefined> {
     | undefined;
 }
 
-export async function getValidPOICategories(guild: Guild): Promise<string[]> {
+export async function getValidPOICategories(): Promise<string[]> {
   const db = getDb();
   const validCategories = db
     .prepare<[], { id: string }>(/* sql */ `SELECT id FROM rp_categories`)
@@ -23,4 +23,18 @@ export async function getValidPOICategories(guild: Guild): Promise<string[]> {
     .map((row) => row.id);
 
   return validCategories;
+}
+
+export async function validatePOICategory(id: string) {
+  const db = getDb();
+
+  const isItThere = db
+    .prepare(
+      /* sql */ `SELECT id FROM rp_categories
+      WHERE id = ?`,
+    )
+    .pluck()
+    .get(id);
+
+  return isItThere;
 }

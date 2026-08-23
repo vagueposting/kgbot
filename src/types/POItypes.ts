@@ -6,6 +6,7 @@ import { CommandInteraction, Guild } from "discord.js";
 export interface POIRow {
   id: number;
   code: string;
+  channel: string;
   data: string;
 }
 

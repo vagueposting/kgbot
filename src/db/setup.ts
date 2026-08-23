@@ -19,6 +19,7 @@ export function setupDatabase(): void {
     CREATE TABLE IF NOT EXISTS poi (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT UNIQUE NOT NULL,
+      category TEXT UNIQUE NOT NULL,
       data TEXT NOT NULL
     );
 
