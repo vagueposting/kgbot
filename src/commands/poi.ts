@@ -219,10 +219,14 @@ module.exports = {
 
                 const description = chunk
                   .map((p) => {
-                    console.log(p);
+                    const parentCategory =
+                      interaction.guild?.channels.cache.get(p.channel)?.parent!
+                        .name;
 
                     return `### ${p.name} - \`${p.code}\`
-                    ⠀**Aliases:** ${(p.aliases ?? []).join(", ") || "None"}
+                    -# <#${p.channel}> [${parentCategory}]
+                    ⠀**Aliases:** 
+                    ⠀⠀${(p.aliases ?? []).join(", ") || "None"}
                     ⠀**Responds to:**
                     ⠀⠀${Object.keys(p.responses).join(", ")}`;
                   })
