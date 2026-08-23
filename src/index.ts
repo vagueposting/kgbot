@@ -7,6 +7,7 @@ import {
   GatewayIntentBits,
   Interaction,
   ChatInputCommandInteraction,
+  AutocompleteInteraction,
   MessageFlags,
 } from "discord.js";
 import { setupDatabase } from "./db/setup";
@@ -18,6 +19,7 @@ export interface Command {
     name: string;
   };
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+  autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
 }
 
 export class ExtendedClient extends Client {
@@ -69,28 +71,47 @@ function loadCommand(filePath: string) {
 }
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  // AUTOCOMPLETE
+  if (interaction.isAutocomplete()) {
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
 
-  const command = client.commands.get(interaction.commandName);
-  if (!command) {
-    console.log(`No command matching ${interaction.commandName} was found.`);
+    try {
+      if (command.autocomplete) {
+        await command.autocomplete(interaction);
+      }
+    } catch (error) {
+      console.error(
+        `Error handling autocomplete for ${interaction.commandName}:`,
+        error,
+      );
+    }
     return;
   }
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({
-        content: "There was an error executing this command!",
-        flags: MessageFlags.Ephemeral,
-      });
-    } else {
-      await interaction.reply({
-        content: "There was an error executing this command!",
-        flags: MessageFlags.Ephemeral,
-      });
+  // SLASH
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName);
+    if (!command) {
+      console.log(`No command matching ${interaction.commandName} was found.`);
+      return;
+    }
+
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: "There was an error executing this command!",
+          flags: MessageFlags.Ephemeral,
+        });
+      } else {
+        await interaction.reply({
+          content: "There was an error executing this command!",
+          flags: MessageFlags.Ephemeral,
+        });
+      }
     }
   }
 });

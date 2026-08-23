@@ -4,6 +4,7 @@ import {
   AutocompleteInteraction,
   MessageFlags,
   EmbedBuilder,
+  ChannelType,
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
 import { POI, TruePOIConstructor } from "../types/POItypes";
@@ -116,28 +117,30 @@ module.exports = {
         if (!interaction.guild) return interaction.respond([]);
 
         const validCategories = await getValidPOICategories();
-
         if (validCategories.length === 0) return interaction.respond([]);
+
+        const query = focusedOption.value.toString().toLowerCase();
 
         const choices = interaction.guild.channels.cache
           .filter((channel) => {
-            if (!channel.isTextBased()) return false;
+            if (channel.isThread()) return false;
 
-            const categoryID = channel.isThread()
-              ? (channel.parent?.parentId ?? channel.parentId)
-              : channel.parentId;
+            if (channel.type !== ChannelType.GuildText || !channel.parentId)
+              return false;
 
-            return (
-              typeof categoryID === "string" &&
-              validCategories.includes(categoryID)
+            const isDirectChildOfValidCategory = validCategories.includes(
+              channel.parentId,
             );
+
+            const matchesQuery = channel.name.toLowerCase().includes(query);
+
+            return isDirectChildOfValidCategory && matchesQuery;
           })
+          .first(25)
           .map((channel) => ({
-            name: `#${channel.name}`,
+            name: `#${channel.name}`.slice(0, 100),
             value: channel.id,
-          }))
-          .filter((choice) => choice.name && choice.value)
-          .slice(0, 25);
+          }));
 
         await interaction.respond(choices);
       }
@@ -215,10 +218,14 @@ module.exports = {
                   .setColor("Yellow");
 
                 const description = chunk
-                  .map(
-                    (p) =>
-                      `### ${p.name} - *${p.code}*\n**Aliases:** ${(p.aliases ?? []).join(", ") || "None"}\n**Responses:**\n${Object.keys(p.responses).join(" , ")}`,
-                  )
+                  .map((p) => {
+                    console.log(p);
+
+                    return `### ${p.name} - \`${p.code}\`
+                    ⠀**Aliases:** ${(p.aliases ?? []).join(", ") || "None"}
+                    ⠀**Responds to:**
+                    ⠀⠀${Object.keys(p.responses).join(", ")}`;
+                  })
                   .join("\n");
                 embed.setDescription(description);
 
@@ -263,7 +270,7 @@ module.exports = {
         const poiDetails: TruePOIConstructor = {
           name: interaction.options.getString("poi_name", true),
           code: generateRandomString(5),
-          channel: interaction.options.getString("poi_channel", true),
+          channel: interaction.options.getString("channel", true),
           guild: interaction.guild,
           aliases: convertToArray(
             interaction.options.getString("poi_aliases") ?? "",
@@ -301,8 +308,6 @@ module.exports = {
           content: replyContent,
           flags: MessageFlags.Ephemeral,
         });
-
-        db.close();
         break;
       }
     }

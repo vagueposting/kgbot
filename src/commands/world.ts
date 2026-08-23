@@ -43,7 +43,7 @@ module.exports = {
             .addStringOption((option) =>
               option
                 .setName("category")
-                .setDescription("Name of the category you want to enroll.")
+                .setDescription("ID of the category you want to enroll.")
                 .setRequired(true)
                 .setAutocomplete(true),
             ),
@@ -72,50 +72,66 @@ module.exports = {
   async autocomplete(interaction: AutocompleteInteraction) {
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand(false);
-    const db = getDb();
+
+    console.log("Autocomplete triggered:", { group, subcommand });
 
     if (group === "channels") {
       const focusedOption = interaction.options.getFocused(true);
 
       switch (subcommand) {
-        case "add_category":
+        case "add_category": {
           if (focusedOption.name === "category") {
-            const choices = interaction.guild?.channels.cache
+            const query = focusedOption.value.toString().toLowerCase();
+
+            const categories = interaction.guild?.channels.cache
               .filter((channel) => channel.type === ChannelType.GuildCategory)
-              .map((channel) => ({
-                name: `#${channel.name}`,
+              .filter((channel) => channel.name.toLowerCase().includes(query));
+
+            if (!categories || categories.size === 0) {
+              return interaction.respond([]);
+            }
+
+            const choices = categories
+              .first(25)
+              .map((channel: GuildChannel) => ({
+                name: `${channel.name}`.slice(0, 100),
                 value: channel.id,
               }));
 
-            if (choices === undefined) return interaction.respond([]);
+            console.log(choices);
 
-            if (choices.length === 0) return interaction.respond([]);
-
-            await interaction.respond(choices);
+            return interaction.respond(choices);
           }
           break;
+        }
 
-        case "remove_category":
+        case "remove_category": {
           if (focusedOption.name === "category") {
             if (!interaction.guild) return interaction.respond([]);
 
+            const query = focusedOption.value.toString().toLowerCase();
             const validCategories = await getValidPOICategories();
 
-            const choices = validCategories.map((cat) => ({
-              name: cat,
-              value: cat,
-            }));
+            const choices = validCategories
+              .filter((cat) => cat.toLowerCase().includes(query))
+              .slice(0, 25)
+              .map((cat) => ({
+                name: interaction.guild?.channels.cache
+                  .get(cat)
+                  ?.name.slice(0, 100)!,
+                value: cat.slice(0, 100),
+              }));
 
-            await interaction.respond(choices);
+            return interaction.respond(choices);
           }
           break;
+        }
 
         default:
           break;
       }
     }
   },
-
   async execute(interaction: ChatInputCommandInteraction) {
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand();
@@ -139,7 +155,7 @@ module.exports = {
 
           const { name, id } = category;
 
-          const isItThere = validatePOICategory(categoryToAdd);
+          const isItThere = await validatePOICategory(categoryToAdd);
 
           if (isItThere === undefined) {
             const insert = db
@@ -157,7 +173,7 @@ module.exports = {
           }
           break;
         }
-        case "remove": {
+        case "remove_category": {
           const categoryToRemove = interaction.options.getString("category");
 
           if (!categoryToRemove) return;
@@ -255,9 +271,9 @@ module.exports = {
                   .map(
                     (cat) =>
                       `### ${cat.name} - \`${cat.id}\`
-                  \n⠀**No. of channels:** ${cat.channelCount}
-                  \n **Thread activity:** ${cat.activeThreads} / ${cat.totalThreads}
-                  \n **POI Count:** ${cat.poiCount}`,
+                  ⠀**No. of channels:** ${cat.channelCount}
+                  ⠀**Thread activity:** ${cat.activeThreads} / ${cat.totalThreads}
+                  ⠀**POI Count:** ${cat.poiCount}`,
                   )
                   .join("\n");
 

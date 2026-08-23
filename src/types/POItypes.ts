@@ -89,7 +89,14 @@ export class POI {
     this.guildId = guildId;
     this.aliases = aliases;
 
-    if (!Array.isArray(actionsOrResponses)) {
+    if (Array.isArray(actionsOrResponses)) {
+      for (const action of actionsOrResponses) {
+        const trimmed = action.trim();
+        if (trimmed) {
+          this.responses[trimmed] = new POIResponse("");
+        }
+      }
+    } else if (actionsOrResponses) {
       this.responses = actionsOrResponses;
     }
   }
