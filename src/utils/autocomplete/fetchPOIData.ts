@@ -5,7 +5,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 
-export function getPOICodes(
+export function fetchPOIData(
   query: string = "",
   interaction: ChatInputCommandInteraction | AutocompleteInteraction,
 ): ApplicationCommandOptionChoiceData[] {
@@ -28,7 +28,7 @@ export function getPOICodes(
       const { name, channel } = poiData;
 
       return {
-        name: `${name} - #${interaction.guild?.channels.cache.get(channel)} - ${row.code}`,
+        name: `${name} - #${interaction.guild?.channels.cache.get(channel)!.name} - ${row.code}`,
         value: row.code,
       };
     });

@@ -12,7 +12,7 @@ import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
 import { getValidPOICategories, readAllPois } from "../utils/tableReaders";
 import { paginateData } from "../utils/pagination";
-import { getPOICodes } from "../utils/autocomplete/poiCode";
+import { fetchPOIData } from "../utils/autocomplete/fetchPOIData";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -75,7 +75,8 @@ module.exports = {
                 .setDescription(
                   "The unique 5-character code of the PoI you want to delete.",
                 )
-                .setAutocomplete(true),
+                .setAutocomplete(true)
+                .setRequired(true),
             ),
         ),
     )
@@ -150,7 +151,7 @@ module.exports = {
       const focusedOption = interaction.options.getFocused(true);
 
       if (focusedOption.name === "poi_code") {
-        const choices = getPOICodes(
+        const choices = fetchPOIData(
           focusedOption.value.toString(),
           interaction,
         );
@@ -161,7 +162,7 @@ module.exports = {
     if (group === "responses" && subcommand === "modify") {
       const focusedOption = interaction.options.getFocused(true);
       if (focusedOption.name === "poi_code") {
-        const choices = getPOICodes(
+        const choices = fetchPOIData(
           focusedOption.value.toString(),
           interaction,
         );
