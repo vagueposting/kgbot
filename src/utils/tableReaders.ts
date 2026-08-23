@@ -14,3 +14,13 @@ export async function readPoiByCode(code: string): Promise<POI | undefined> {
     | POI
     | undefined;
 }
+
+export async function getValidPOICategories(guild: Guild): Promise<string[]> {
+  const db = getDb();
+  const validCategories = db
+    .prepare<[], { id: string }>(/* sql */ `SELECT id FROM rp_categories`)
+    .all()
+    .map((row) => row.id);
+
+  return validCategories;
+}

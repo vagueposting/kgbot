@@ -9,7 +9,7 @@ import { convertToArray } from "../utils/convertToArray";
 import { POI, TruePOIConstructor } from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
-import { readAllPois } from "../utils/tableReaders";
+import { getValidPOICategories, readAllPois } from "../utils/tableReaders";
 import { paginateData } from "../utils/pagination";
 import { getPOICodes } from "../utils/autocomplete/poiCode";
 
@@ -115,10 +115,7 @@ module.exports = {
       if (focusedOption.name === "channel") {
         if (!interaction.guild) return interaction.respond([]);
 
-        const validCategories = db
-          .prepare<[], { id: string }>(/* sql */ `SELECT id FROM rp_categories`)
-          .all()
-          .map((row) => row.id);
+        const validCategories = await getValidPOICategories(interaction.guild);
 
         if (validCategories.length === 0) return interaction.respond([]);
 
