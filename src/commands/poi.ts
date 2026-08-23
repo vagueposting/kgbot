@@ -149,15 +149,23 @@ module.exports = {
     if (group === "manage" && subcommand === "delete") {
       const focusedOption = interaction.options.getFocused(true);
 
-      if (focusedOption.name === "delete") {
-        await interaction.respond(getPOICodes(db));
+      if (focusedOption.name === "poi_code") {
+        const choices = getPOICodes(
+          focusedOption.value.toString(),
+          interaction,
+        );
+        await interaction.respond(choices);
       }
     }
 
     if (group === "responses" && subcommand === "modify") {
       const focusedOption = interaction.options.getFocused(true);
       if (focusedOption.name === "poi_code") {
-        await interaction.respond(getPOICodes(db));
+        const choices = getPOICodes(
+          focusedOption.value.toString(),
+          interaction,
+        );
+        await interaction.respond(choices);
       } else if ((focusedOption.name = "response")) {
         const activePOI = interaction.options.getString("poi_code");
 
