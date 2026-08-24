@@ -1,0 +1,72 @@
+RespondScript {
+  Program = Statement*
+ 
+  Statement = StateDeclaration 
+            | MethodDeclaration 
+            | ConditionalBlock
+            | RollDeclaration
+            | Display
+ 
+  StateDeclaration = "{{#" Identifier "=" Value "}}"
+ 
+  MethodDeclaration = "{{&" Identifier (ActionType Identifier ActionDegree?)* "}}"
+  
+  ConditionalBlock = IfClause ElseIfClause* ElseClause? "{{/?}}"
+  IfClause         = "{{?" Condition "}}" Statement*
+  ElseIfClause     = "{{??" Condition "}}" Statement*
+  ElseClause       = "{{!?" "}}" Statement*
+  
+  Condition        = Identifier Comparator Value
+  Comparator       = "==" | "!=" | ">=" | "<=" | ">" | "<"
+  
+  EmbedState = "{{" IdentifierOperation "}}"
+  
+  IdentifierOperation = Identifier (Operand RightHandSide)?
+  RightHandSide = Identifier | NumberLiteral
+  Operand = "+" | "-" | "*" | "/"
+  
+  RollDeclaration = "{{@" NumberLiteral "|" listOf<Approach, ",">? "|" listOf<Skill, ",">? "}}" RollSucceed RollFail? "{{/@}}"
+  
+  RollSucceed = "{{succeed}}" Statement*
+  RollFail = "{{fail}}" Statement*
+  
+  Approach = caseInsensitive<"Careful"> 
+           | caseInsensitive<"Clever"> 
+           | caseInsensitive<"Flashy"> 
+           | caseInsensitive<"Forceful"> 
+           | caseInsensitive<"Quick"> 
+           | caseInsensitive<"Sneaky"> 
+           
+  Skill = caseInsensitive<"Homemaking">
+        | caseInsensitive<"Sustainment">
+        | caseInsensitive<"Skulduggery">
+        | caseInsensitive<"Scholarship">
+        | caseInsensitive<"Athletics">
+        | caseInsensitive<"Interfacing">
+        | caseInsensitive<"Composure">
+        | caseInsensitive<"Esthesia">
+        | caseInsensitive<"Instinct">
+        | caseInsensitive<"Dominion">
+  
+  Display = EmbedState | PlainText
+  
+  PlainText = (~"{{" any)+
+ 
+  Identifier = ~Keyword name
+  name = letter alnum*
+  
+  Keyword = ActionType | BooleanLiteral | "succeed" | "fail"
+
+  Value = StringLiteral | NumberLiteral | BooleanLiteral
+  StringLiteral = alnum+
+  NumberLiteral = digit+
+  BooleanLiteral = "true" | "false"
+
+  ActionType = "dec" | "inc" | "set"
+             | "flip" | "true" | "untrue"
+                        
+  ActionDegree = QuotedString | NumberLiteral
+  QuotedString = "\"" alnum* "\""
+  
+  space := "\x00".."\x20"
+}
