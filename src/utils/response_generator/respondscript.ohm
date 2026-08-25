@@ -1,8 +1,9 @@
 RespondScript {
-  Program = Statement*
+  Program = StateDeclaration* Default Statement*
+
+  Default = Display
  
-  Statement = StateDeclaration 
-            | MethodDeclaration 
+  Statement = MethodDeclaration 
             | ConditionalBlock
             | RollDeclaration
             | Display
