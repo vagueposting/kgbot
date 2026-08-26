@@ -8,15 +8,26 @@ RespondScript {
             | RollDeclaration
             | Display
  
-  StateDeclaration = "{{#" Identifier "=" Value "}}"
+ // instead of assigning values, the State Declaration checks 
+ // which parts of the object state are actually relevant
+  StateDeclaration = ObjectState | PlayerState
+  
+  ObjectState = "{{#" listOf<Identifier, ","> "}}"
+  PlayerState = "{{P" PlayerStuff "}}"
+  PlayerStuff = "pockets" | "thoughts" // TODO: add more. but i'll get there as i design.
  
-  MethodDeclaration = "{{&" Identifier (ActionType Identifier ActionDegree?)* "}}"
+  MethodDeclaration = "{{&" MethodBody "}}"
+  MethodBody = ObjectMethod | PlayerMethod
+	ObjectMethod =  Identifier (ActionType Identifier ActionDegree?)* 
+    PlayerMethod = PlayerStuff MetaCode
+    MetaCode = (letter alnum)*
   
   ConditionalBlock = IfClause ElseIfClause* ElseClause? "{{/?}}"
   IfClause         = "{{?" Condition "}}" Statement*
   ElseIfClause     = "{{??" Condition "}}" Statement*
   ElseClause       = "{{!?" "}}" Statement*
-  
+
+  // TODO: Add a rule for checking for *alias*.  
   Condition        = Identifier Comparator Value
   Comparator       = "==" | "!=" | ">=" | "<=" | ">" | "<"
   
@@ -26,10 +37,11 @@ RespondScript {
   RightHandSide = Identifier | NumberLiteral
   Operand = "+" | "-" | "*" | "/"
   
-  RollDeclaration = "{{@" NumberLiteral "|" listOf<Approach, ",">? "|" listOf<Skill, ",">? "}}" RollSucceed RollFail? "{{/@}}"
+  RollDeclaration = "{{@" NumberLiteral "|" listOf<Approach, ",">? "|" listOf<Skill, ",">? "}}" (FlavorVariant? RollSucceed RollFail?)* "{{/@}}"
   
-  RollSucceed = "{{succeed}}" Statement*
-  RollFail = "{{fail}}" Statement*
+  FlavorVariant = "{{>" Approach? "|"? Skill? "}}" // you can get an approach or a skill, or both!
+  RollSucceed = "{{=succeed}}" Statement*
+  RollFail = "{{=fail}}" Statement*
   
   Approach = caseInsensitive<"Careful"> 
            | caseInsensitive<"Clever"> 
