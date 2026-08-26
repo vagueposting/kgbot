@@ -19,15 +19,17 @@ RespondScript {
   MethodDeclaration = "{{&" MethodBody "}}"
   MethodBody = ObjectMethod | PlayerMethod
 	ObjectMethod =  Identifier (ActionType Identifier ActionDegree?)* 
-    PlayerMethod = PlayerStuff MetaCode
-    MetaCode = (letter alnum)*
+  PlayerMethod = PlayerStuff MetaCode
+  MetaCode = (letter alnum)*
   
   ConditionalBlock = IfClause ElseIfClause* ElseClause? "{{/?}}"
   IfClause         = "{{?" Condition "}}" Statement*
   ElseIfClause     = "{{??" Condition "}}" Statement*
   ElseClause       = "{{!?" "}}" Statement*
 
-  // TODO: Add a rule for checking for *alias*.  
+  AliasBlock = "{{alias}}" AliasCase+ ElseClause? "{{/alias}}"
+  AliasCase  = "{{:" listOf<StringLiteral, ","> "}}" Statement*
+
   Condition        = Identifier Comparator Value
   Comparator       = "==" | "!=" | ">=" | "<=" | ">" | "<"
   
