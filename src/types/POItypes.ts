@@ -27,12 +27,11 @@ export interface TruePOIConstructor {
   actionsOrResponses: string[] | Record<string, POIResponse>;
 }
 
-type ValidStates = string | number | boolean;
-type POIState = Record<string, ValidStates>;
-type POIMethod = (
+export type ValidStates = string | number | boolean;
+export type POIState = Record<string, ValidStates>;
+export type POIMethod = (
   currentState: POIState,
-  first: ValidStates,
-  ...others: ValidStates[]
+  ...args: ValidStates[]
 ) => POIState;
 
 export class POIResponse {
@@ -130,18 +129,15 @@ export class POI {
   execResponseMethod(
     responseKey: string,
     methodName: string,
-    firstArg: ValidStates,
-    ...otherArgs: ValidStates[]
+    ...args: ValidStates[]
   ) {
     const response = this.responses[responseKey];
-
     if (!response) throw new Error(`Response ${responseKey} not found.`);
 
     const method = response.methods[methodName];
-
     if (!method) throw new Error(`Method ${methodName} not found.`);
 
-    this.state = method(this.state, firstArg, ...otherArgs);
+    this.state = method(this.state, ...args);
   }
 
   toJSON(interaction: CommandInteraction): string {

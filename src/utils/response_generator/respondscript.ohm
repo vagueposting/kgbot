@@ -7,7 +7,7 @@ RespondScript {
             | ConditionalBlock
             | RollDeclaration
             | Display
- 
+  
  // instead of assigning values, the State Declaration checks 
  // which parts of the object state are actually relevant
   StateDeclaration = ObjectState | PlayerState
