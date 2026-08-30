@@ -6,7 +6,7 @@ echo "Cleaning local build..."
 rm -rf dist
 
 echo "Compiling TypeScript..."
-npx tsc
+npm run build
 
 # Prompt interactively for password without echoing characters
 read -s -p "Enter SFTP Password: " SFTP_PASSWORD

@@ -9,6 +9,11 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "tools/deploy-sftp.ts",
+    "tools/wipe-commands.ts",
+    "tools/deploy-commands.ts"
+  ],
   "exclude": ["node_modules"]
 }

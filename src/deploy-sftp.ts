@@ -29,13 +29,22 @@ async function deploy() {
     console.log("Cleaning remote dist directory...");
     const exists = await sftp.exists(remoteDist);
     if (exists) {
-      await sftp.rmdir(remoteDist, true); // Recursive delete
+      await sftp.rmdir(remoteDist, true);
     }
 
     console.log("Uploading fresh dist directory...");
-    await sftp.uploadDir(path.join(__dirname, "../dist"), remoteDist);
+    const localDistPath = path.join(__dirname, "../dist");
 
-    // Upload config files
+    await sftp.uploadDir(localDistPath, remoteDist, {
+      filter: (filePath: string, isDir: boolean) => {
+        if (!isDir) {
+          const relativePath = path.relative(localDistPath, filePath);
+          console.log(`   Uploading dist\\${relativePath}...`);
+        }
+        return true;
+      },
+    });
+
     await uploadIfExists(
       sftp,
       path.join(__dirname, "../package.json"),
