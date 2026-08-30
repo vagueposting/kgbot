@@ -25,11 +25,13 @@ semantics.addOperation("toPOIResponse", {
 
     for (const stmt of evaluatedStatements) {
       if (stmt.type === "roll") {
-        response.roll_dc = stmt.dc;
-        response.approach = stmt.approaches;
-        response.skill_tag = stmt.skills;
-        response.success = stmt.successText;
-        response.failure = stmt.failureText;
+        response.addCheck({
+          roll_dc: stmt.dc,
+          approach: stmt.approaches,
+          skill_tag: stmt.skills,
+          success: stmt.successText,
+          failure: stmt.failureText,
+        });
       } else if (stmt.type === "method") {
         response.addMethod(stmt.name, stmt.method);
       }
@@ -56,8 +58,8 @@ semantics.addOperation("toPOIResponse", {
     };
   },
 
-  Default(displayNode) {
-    return displayNode.toPOIResponse();
+  Default(displayNodes) {
+    return displayNodes.children.map((d) => d.toPOIResponse()).join("");
   },
 
   Display(childNode) {
@@ -69,7 +71,19 @@ semantics.addOperation("toPOIResponse", {
   },
 
   EmbedState(_open, opNode, _close) {
-    return `{{${opNode.toPOIResponse()}}}`;
+    return `\${state.${opNode.toPOIResponse()}}`;
+  },
+
+  IdentifierOperation(idNode, operandNode, rhsNode) {
+    const id = idNode.toPOIResponse();
+
+    if (operandNode.children.length === 0) {
+      return id;
+    }
+
+    const op = operandNode.children[0].sourceString;
+    const rhs = rhsNode.children[0].toPOIResponse();
+    return `${id} ${op} ${rhs}`;
   },
 
   RollDeclaration(

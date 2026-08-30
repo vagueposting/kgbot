@@ -1,7 +1,7 @@
 RespondScript {
   Program = StateDeclaration* Default Statement*
 
-  Default = Display
+  Default = Display+
  
   Statement = MethodDeclaration 
             | ConditionalBlock

@@ -33,30 +33,26 @@ export type POIMethod = (
   currentState: POIState,
   ...args: ValidStates[]
 ) => POIState;
-
-export class POIResponse {
-  base: string;
+export type ResponseRolls = {
   roll_dc?: number;
   approach?: Approaches[];
   skill_tag?: SkillTags[];
   success?: string;
   failure?: string;
+};
+
+export class POIResponse {
+  base: string;
+  checks: ResponseRolls[];
   methods: Record<string, POIMethod> = {};
 
-  constructor(
-    base: string,
-    roll_dc = 0,
-    approach: Approaches[] = [],
-    skill_tag: SkillTags[] = [],
-    success = "This response doesn't have a success mode.",
-    failure = "This response doesn't have a failure mode.",
-  ) {
+  constructor(base: string) {
     this.base = base;
-    this.roll_dc = roll_dc;
-    this.approach = approach;
-    this.skill_tag = skill_tag;
-    this.success = success;
-    this.failure = failure;
+    this.checks = [];
+  }
+
+  addCheck(checkData: ResponseRolls) {
+    this.checks.push(checkData);
   }
 
   addMethod(name: string, method: POIMethod) {
