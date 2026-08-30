@@ -1,0 +1,12 @@
+StateScript {
+    StateList = listOf<IndividualState, ",">
+
+    IndividualState = Identifier "=" Value
+
+    Identifier = (upper | digit)+
+
+    Value = StringLiteral | NumberLiteral | BooleanLiteral
+    StringLiteral = "\"" (~"\"" any)* "\""
+    NumberLiteral = digit+
+    BooleanLiteral = "true" | "false"    
+}

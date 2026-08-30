@@ -1,9 +1,4 @@
-import {
-  POIResponse,
-  POIMethod,
-  POIState,
-  ValidStates,
-} from "../../types/POItypes";
+import { POIResponse, POIMethod, POIState } from "../../types/POItypes";
 import grammar, { RespondScriptSemantics } from "./respondscript.ohm-bundle";
 
 export type ScriptNode =
@@ -16,10 +11,11 @@ export type ScriptNode =
       elseBranch?: any;
     };
 
-const semantics: RespondScriptSemantics = grammar.createSemantics();
+export const semantics: RespondScriptSemantics = grammar.createSemantics();
 
 semantics.addOperation("toPOIResponse", {
   Program(stateDecls, defaultDisplay, statements) {
+    const calledState = stateDecls.children.map((decl) => decl.toPOIResponse());
     const baseText = defaultDisplay.toPOIResponse();
     const response = new POIResponse(baseText);
 
@@ -40,6 +36,24 @@ semantics.addOperation("toPOIResponse", {
     }
 
     return response;
+  },
+
+  StateDeclaration(node) {
+    return node.toPOIResponse();
+  },
+
+  ObjectState(_open, identifiersNode, _close) {
+    return {
+      type: "objectState",
+      keys: identifiersNode.asIteration().toPOIResponse(),
+    };
+  },
+
+  PlayerState(_open, stuffNode, _close) {
+    return {
+      type: "playerState",
+      target: stuffNode.sourceString,
+    };
   },
 
   Default(displayNode) {
@@ -95,18 +109,14 @@ semantics.addOperation("toPOIResponse", {
     return bodyNode.toPOIResponse();
   },
 
-  ObjectMethod(idNode, actionTypes, targetIds, degrees) {
+  ObjectMethod(idNode, actionsNode) {
     const methodName = idNode.toPOIResponse();
-    const actions = actionTypes.children.map((typeNode, index) => ({
-      type: typeNode.sourceString,
-      target: targetIds.children[index].toPOIResponse(),
-      degree: degrees.children[index]?.children[0]?.toPOIResponse(),
-    }));
+    // actionsNode.children maps directly to individual Action AST nodes
+    const actions = actionsNode.children.map((actionNode) =>
+      actionNode.toPOIResponse(),
+    );
 
-    const compileMethod: POIMethod = (
-      currentState: POIState,
-      ..._args: ValidStates[]
-    ): POIState => {
+    const compileMethod: POIMethod = (currentState: POIState): POIState => {
       const nextState = { ...currentState };
 
       for (const act of actions) {
@@ -151,6 +161,14 @@ semantics.addOperation("toPOIResponse", {
     };
   },
 
+  Action(typeNode, targetIdNode, degreeNode) {
+    return {
+      type: typeNode.sourceString,
+      target: targetIdNode.toPOIResponse(),
+      degree: degreeNode.children[0]?.toPOIResponse(),
+    };
+  },
+
   Identifier(_nameNode) {
     return this.sourceString;
   },
@@ -163,7 +181,7 @@ semantics.addOperation("toPOIResponse", {
     return val.toPOIResponse();
   },
 
-  QuotedString(_open, chars, _close) {
+  StringLiteral(_open, chars, _close) {
     return chars.sourceString;
   },
 

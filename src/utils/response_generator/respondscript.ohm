@@ -18,7 +18,8 @@ RespondScript {
  
   MethodDeclaration = "{{&" MethodBody "}}"
   MethodBody = ObjectMethod | PlayerMethod
-	ObjectMethod =  Identifier (ActionType Identifier ActionDegree?)* 
+	ObjectMethod =  Identifier Action*
+  Action = ActionType Identifier ActionDegree?
   PlayerMethod = PlayerStuff MetaCode
   MetaCode = (letter alnum)*
   
@@ -73,15 +74,14 @@ RespondScript {
   Keyword = ActionType | BooleanLiteral | "succeed" | "fail"
 
   Value = StringLiteral | NumberLiteral | BooleanLiteral
-  StringLiteral = alnum+
+  StringLiteral = "\"" (~"\"" any)* "\""
   NumberLiteral = digit+
   BooleanLiteral = "true" | "false"
 
   ActionType = "dec" | "inc" | "set"
              | "flip" | "true" | "untrue"
                         
-  ActionDegree = QuotedString | NumberLiteral
-  QuotedString = "\"" alnum* "\""
+  ActionDegree = StringLiteral | NumberLiteral
   
   space := "\x00".."\x20"
 }

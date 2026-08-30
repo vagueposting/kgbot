@@ -21,7 +21,8 @@ export interface RespondScriptActionDict<T> extends BaseActionDict<T> {
   PlayerStuff?: (this: NonterminalNode, arg0: TerminalNode) => T;
   MethodDeclaration?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode) => T;
   MethodBody?: (this: NonterminalNode, arg0: NonterminalNode) => T;
-  ObjectMethod?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode, arg2: IterationNode, arg3: IterationNode) => T;
+  ObjectMethod?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode) => T;
+  Action?: (this: NonterminalNode, arg0: NonterminalNode, arg1: NonterminalNode, arg2: IterationNode) => T;
   PlayerMethod?: (this: NonterminalNode, arg0: NonterminalNode, arg1: NonterminalNode) => T;
   MetaCode?: (this: NonterminalNode, arg0: IterationNode, arg1: IterationNode) => T;
   ConditionalBlock?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode, arg2: IterationNode, arg3: TerminalNode) => T;
@@ -48,12 +49,11 @@ export interface RespondScriptActionDict<T> extends BaseActionDict<T> {
   name?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode) => T;
   Keyword?: (this: NonterminalNode, arg0: NonterminalNode | TerminalNode) => T;
   Value?: (this: NonterminalNode, arg0: NonterminalNode) => T;
-  StringLiteral?: (this: NonterminalNode, arg0: IterationNode) => T;
+  StringLiteral?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: TerminalNode) => T;
   NumberLiteral?: (this: NonterminalNode, arg0: IterationNode) => T;
   BooleanLiteral?: (this: NonterminalNode, arg0: TerminalNode) => T;
   ActionType?: (this: NonterminalNode, arg0: TerminalNode) => T;
   ActionDegree?: (this: NonterminalNode, arg0: NonterminalNode) => T;
-  QuotedString?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: TerminalNode) => T;
   space?: (this: NonterminalNode, arg0: TerminalNode) => T;
 }
 
