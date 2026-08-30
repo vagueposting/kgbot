@@ -8,15 +8,25 @@ import {
   Node,
   NonterminalNode,
   Semantics,
-  TerminalNode
-} from 'ohm-js';
+  TerminalNode,
+} from "ohm-js";
 
 export interface StateScriptActionDict<T> extends BaseActionDict<T> {
   StateList?: (this: NonterminalNode, arg0: NonterminalNode) => T;
-  IndividualState?: (this: NonterminalNode, arg0: NonterminalNode, arg1: TerminalNode, arg2: NonterminalNode) => T;
+  IndividualState?: (
+    this: NonterminalNode,
+    arg0: NonterminalNode,
+    arg1: TerminalNode,
+    arg2: NonterminalNode,
+  ) => T;
   Identifier?: (this: NonterminalNode, arg0: IterationNode) => T;
   Value?: (this: NonterminalNode, arg0: NonterminalNode) => T;
-  StringLiteral?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: TerminalNode) => T;
+  StringLiteral?: (
+    this: NonterminalNode,
+    arg0: TerminalNode,
+    arg1: IterationNode,
+    arg2: TerminalNode,
+  ) => T;
   NumberLiteral?: (this: NonterminalNode, arg0: IterationNode) => T;
   BooleanLiteral?: (this: NonterminalNode, arg0: TerminalNode) => T;
 }
@@ -35,4 +45,3 @@ export interface StateScriptGrammar extends Grammar {
 
 declare const grammar: StateScriptGrammar;
 export default grammar;
-
