@@ -250,15 +250,30 @@ module.exports = {
                 const description = chunk
                   .map((p) => {
                     const parentCategory =
-                      interaction.guild?.channels.cache.get(p.channel)?.parent!
-                        .name;
+                      interaction.guild?.channels.cache.get(p.channel)?.parent
+                        ?.name ?? "Unknown";
+
+                    const formattedActions = Object.keys(p.responses).map(
+                      (canonicalKey) => {
+                        const synonyms = Object.entries(p.actionAliases ?? {})
+                          .filter(
+                            ([alias, target]) =>
+                              target === canonicalKey && alias !== canonicalKey,
+                          )
+                          .map(([alias]) => alias);
+
+                        return synonyms.length > 0
+                          ? `**${canonicalKey}** (*${synonyms.join(", ")}*)`
+                          : `**${canonicalKey}**`;
+                      },
+                    );
 
                     return `### ${p.name} - \`${p.code}\`
-                    <#${p.channel}> [${parentCategory}]
-                    ⠀**Aliases:** 
-                    ⠀⠀${(p.aliases ?? []).join(", ") || "None"}
-                    ⠀**Responds to:**
-                    ⠀⠀${Object.keys(p.responses).join(", ")}`;
+            <#${p.channel}> [${parentCategory}]
+            ⠀**Aliases:** 
+            ⠀⠀${(p.aliases ?? []).join(", ") || "None"}
+            ⠀**Responds to:**
+            ⠀⠀${formattedActions.join(", ") || "None"}`;
                   })
                   .join("\n");
                 embed.setDescription(description);
