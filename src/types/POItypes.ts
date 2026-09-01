@@ -1,3 +1,4 @@
+import { getDb } from "../db/setup";
 import { getParentId } from "../utils/getParentId";
 import { Approaches } from "./approaches";
 import { SkillTags } from "./skilltags";
@@ -33,6 +34,7 @@ export type POIMethod = (
   currentState: POIState,
   ...args: ValidStates[]
 ) => POIState;
+
 export type ResponseRolls = {
   roll_dc?: number;
   approach?: Approaches[];
@@ -41,10 +43,59 @@ export type ResponseRolls = {
   failure?: string;
 };
 
+export interface ParsedActions {
+  canonicalActions: string[];
+  aliasMap: Record<string, string>;
+}
+
+function interpolateTemplate(template: string, state: POIState): string {
+  return template.replace(/\$\{state\.(\w+)\}/g, (_, key) => {
+    return state[key] !== undefined ? String(state[key]) : "";
+  });
+}
+
+export function parseActionGroups(input: string): ParsedActions {
+  const canonicalActions: string[] = [];
+  const aliasMap: Record<string, string> = {};
+
+  if (!input.trim()) return { canonicalActions, aliasMap };
+
+  const groupRegex = /\(([^)]+)\)|([^,]+)/g;
+
+  let match: RegExpExecArray | null;
+
+  while ((match = groupRegex.exec(input)) !== null) {
+    if (match[1]) {
+      const synonyms = match[1]
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (synonyms.length > 0) {
+        const canonical = synonyms[0];
+        canonicalActions.push(canonical);
+
+        for (const synonym of synonyms) {
+          aliasMap[synonym] = canonical;
+        }
+      }
+    } else if (match[2]) {
+      // Standalone action: "sit down"
+      const item = match[2].trim().toLowerCase();
+      if (item) {
+        canonicalActions.push(item);
+        aliasMap[item] = item;
+      }
+    }
+  }
+
+  return { canonicalActions, aliasMap };
+}
+
 export class POIResponse {
+  // TODO: Move methods to the main POI class
   base: string;
   checks: ResponseRolls[];
-  methods: Record<string, POIMethod> = {};
 
   constructor(base: string) {
     this.base = base;
@@ -55,8 +106,22 @@ export class POIResponse {
     this.checks.push(checkData);
   }
 
-  addMethod(name: string, method: POIMethod) {
-    this.methods[name] = method;
+  renderBase(state: POIState): string {
+    return interpolateTemplate(this.base, state);
+  }
+
+  renderCheckOutcome(
+    checkIndex: number,
+    isSuccess: boolean,
+    state: POIState,
+  ): string {
+    const check = this.checks[checkIndex];
+
+    if (!check) throw new Error(`Check index ${checkIndex} out of bounds.`);
+
+    const rawText = isSuccess ? (check.success ?? "") : (check.failure ?? "");
+
+    return interpolateTemplate(rawText, state);
   }
 }
 
@@ -68,7 +133,16 @@ export class POI {
   channel: string;
   guildId?: string;
   state: POIState = {};
+  methods: Record<string, POIMethod> = {};
   responses: Record<string, POIResponse> = {};
+  metrics: {
+    created: number;
+    lastInteracted: {
+      dateTime: number | null;
+      player: string | null;
+    };
+    timesInteracted: number;
+  };
 
   private constructor(
     name: string,
@@ -83,6 +157,14 @@ export class POI {
     this.channel = channel;
     this.guildId = guildId;
     this.aliases = aliases;
+    this.metrics = {
+      created: Math.floor(Date.now() / 1000),
+      lastInteracted: {
+        dateTime: null,
+        player: null,
+      },
+      timesInteracted: 0,
+    };
 
     if (Array.isArray(actionsOrResponses)) {
       for (const action of actionsOrResponses) {
@@ -99,7 +181,6 @@ export class POI {
   static async create(obj: TruePOIConstructor): Promise<POI> {
     const { name, code, channel, guild, aliases, actionsOrResponses } = obj;
 
-    // Check if guild exists (not a DM)
     if (!guild) {
       throw new Error("POI cannot be created in DMs");
     }
@@ -122,21 +203,45 @@ export class POI {
     return poi;
   }
 
-  execResponseMethod(
-    responseKey: string,
-    methodName: string,
-    ...args: ValidStates[]
-  ) {
-    const response = this.responses[responseKey];
-    if (!response) throw new Error(`Response ${responseKey} not found.`);
+  async modifyResponse(actionKey: string, responseData: POIResponse) {
+    this.responses[actionKey] = responseData;
 
-    const method = response.methods[methodName];
-    if (!method) throw new Error(`Method ${methodName} not found.`);
+    const payload = this.toJSON();
 
+    const db = getDb();
+    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
+      payload,
+      this.code,
+    );
+  }
+
+  execMethod(methodName: string, ...args: ValidStates[]) {
+    const method = this.methods[methodName];
+    if (!method)
+      throw new Error(`Method named ${methodName} not found on POI.`);
     this.state = method(this.state, ...args);
   }
 
-  toJSON(interaction: CommandInteraction): string {
+  evaluateResponse(actionKey: string, playerId: string) {
+    const response = this.responses[actionKey];
+
+    if (!response) throw new Error(`Response ${actionKey} not found on POI.`);
+
+    this.metrics.timesInteracted += 1;
+    this.metrics.lastInteracted = {
+      dateTime: Math.floor(Date.now() / 1000),
+      player: playerId,
+    };
+
+    const renderedBase = response.renderBase(this.state);
+
+    return {
+      text: renderedBase,
+      checks: response.checks,
+    };
+  }
+
+  toJSON(): string {
     const payload: POIJsonPayload = {
       name: this.name,
       channel: this.channel,

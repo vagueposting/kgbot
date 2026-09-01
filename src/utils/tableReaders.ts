@@ -38,3 +38,18 @@ export async function validatePOICategory(id: string) {
 
   return isItThere;
 }
+
+export async function extractPOIData(code: string): Promise<POI | undefined> {
+  const db = getDb();
+
+  const row = db
+    .prepare<
+      [string],
+      { data: string }
+    >(/*sql*/ `SELECT data FROM poi WHERE code = ?`)
+    .get(code);
+
+  if (!row || typeof row.data !== "string") return;
+
+  return JSON.parse(row.data) as POI;
+}

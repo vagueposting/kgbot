@@ -14,9 +14,7 @@
   "author": "vagueposting",
   "main": "dist/index.js",
   "scripts": {
-    "prebuild": "echo 'Bypassing prebuild script...'",
-    "type-check": "tsc --noEmit",
-    "build": "npm run type-check && npx esbuild \"src/**/*.ts\" --bundle --minify --platform=node --external:better-sqlite3 --outdir=dist",
+    "build": "npx tsc",
     "refresh": "bash ./refresh.sh"
   },
   "dependencies": {
@@ -26,13 +24,12 @@
     "@ohm-js/cli": "^2.0.1",
     "@types/better-sqlite3": "^9.6.0",
     "@types/ssh2-sftp-client": "^9.0.6",
-    "ssh2-sftp-client": "^12.1.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.0.0",
-    "esbuild": "^0.28.2",
     "discord.js": "latest",
     "dotenv": "latest",
-    "ohm-js": "^17.5.0"
+    "ohm-js": "^17.5.0",
+    "ssh2-sftp-client": "^12.1.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
   },
   "allowScripts": {
     "better-sqlite3": true,

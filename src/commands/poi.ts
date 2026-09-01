@@ -5,14 +5,27 @@ import {
   MessageFlags,
   EmbedBuilder,
   ChannelType,
+  InteractionCallback,
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
-import { POI, TruePOIConstructor } from "../types/POItypes";
+import {
+  POI,
+  POIResponse,
+  POIRow,
+  TruePOIConstructor,
+} from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
-import { getValidPOICategories, readAllPois } from "../utils/tableReaders";
+import {
+  extractPOIData,
+  getValidPOICategories,
+  readAllPois,
+  readPoiByCode,
+} from "../utils/tableReaders";
 import { paginateData } from "../utils/pagination";
 import { fetchPOIData } from "../utils/autocomplete/fetchPOIData";
+import { semantics } from "../utils/response_generator/respondscriptDefs";
+import { parseResponseScript } from "../utils/parseResponse";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -95,13 +108,22 @@ module.exports = {
                 .setAutocomplete(true)
                 .setRequired(true),
             )
-            .addStringOption(
-              (option) =>
-                option
-                  .setName("response")
-                  .setDescription("Response to modify")
-                  .setAutocomplete(true)
-                  .setRequired(true), // TODO: Add option to change the response object
+            .addStringOption((option) =>
+              option
+                .setName("action")
+                .setDescription(
+                  "The action corresponding to the response you want to modify.",
+                )
+                .setAutocomplete(true)
+                .setRequired(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("response_data")
+                .setDescription(
+                  "RespondScript definition for the response. Check RespondScript documentation for further details.",
+                )
+                .setRequired(true),
             ),
         ),
     ),
@@ -147,7 +169,7 @@ module.exports = {
       }
     }
 
-    if (group === "manage" && subcommand === "delete") {
+    if (group === "manage") {
       const focusedOption = interaction.options.getFocused(true);
 
       if (focusedOption.name === "poi_code") {
@@ -159,7 +181,7 @@ module.exports = {
       }
     }
 
-    if (group === "responses" && subcommand === "modify") {
+    if (group === "responses") {
       const focusedOption = interaction.options.getFocused(true);
       if (focusedOption.name === "poi_code") {
         const choices = fetchPOIData(
@@ -167,30 +189,28 @@ module.exports = {
           interaction,
         );
         await interaction.respond(choices);
-      } else if ((focusedOption.name = "response")) {
+      } else if (focusedOption.name === "action") {
         const activePOI = interaction.options.getString("poi_code");
 
         if (!activePOI) {
-          return { choices: [] };
+          return await interaction.respond([]);
         }
 
-        const result = db
-          .prepare<
-            string[],
-            { data: string }
-          >(/* sql */ `SELECT data FROM poi WHERE code = ?`)
-          .get(activePOI);
+        const result = await extractPOIData(activePOI);
 
-        if (!result) {
-          return { choices: [] };
+        if (!result || !result.responses) {
+          return await interaction.respond([]);
         }
 
-        const choices = Object.keys(JSON.parse(result.data)).map(
-          (key: string) => ({
+        const query = focusedOption.value.toString().toLowerCase();
+
+        const choices = Object.keys(result.responses)
+          .filter((key) => key.toLowerCase().includes(query))
+          .slice(0, 25)
+          .map((key: string) => ({
             name: key,
             value: key,
-          }),
-        );
+          }));
 
         await interaction.respond(choices);
       }
@@ -233,7 +253,7 @@ module.exports = {
                         .name;
 
                     return `### ${p.name} - \`${p.code}\`
-                    -# <#${p.channel}> [${parentCategory}]
+                    <#${p.channel}> [${parentCategory}]
                     ⠀**Aliases:** 
                     ⠀⠀${(p.aliases ?? []).join(", ") || "None"}
                     ⠀**Responds to:**
@@ -274,7 +294,22 @@ module.exports = {
     }
 
     if (group === "responses") {
-      // TODO: write ohmjs DSL
+      switch (subcommand) {
+        case "modify":
+          const poiCode = interaction.options.getString("poi_code");
+          const action = interaction.options.getString("action");
+          const responseCode = interaction.options.getString("response_data");
+          if (typeof responseCode !== "string" || !poiCode || !action) return;
+
+          const newResponse = parseResponseScript(responseCode);
+          const targetPOI = await readPoiByCode(poiCode);
+
+          if (targetPOI !== undefined) {
+            await targetPOI.modifyResponse(action, newResponse);
+          }
+
+          break;
+      }
       return;
     }
 
@@ -302,7 +337,7 @@ module.exports = {
         insertStmt.run(
           poi.code,
           interaction.guild?.channels.cache.get(poi.channel)!.parentId,
-          poi.toJSON(interaction),
+          poi.toJSON(),
         );
 
         let replyContent = `Successfully created **${poi.name}** with ID code **${poiDetails.code}**.`;
