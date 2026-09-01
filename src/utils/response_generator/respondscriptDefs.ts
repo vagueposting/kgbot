@@ -32,8 +32,8 @@ semantics.addOperation("toPOIResponse", {
           success: stmt.successText,
           failure: stmt.failureText,
         });
-      } else if (stmt.type === "method") {
-        response.addMethod(stmt.name, stmt.method);
+      } else if (stmt.type === "methodCall") {
+        response.methodCalls.push(...stmt.name);
       }
     }
 
@@ -55,6 +55,13 @@ semantics.addOperation("toPOIResponse", {
     return {
       type: "playerState",
       target: stuffNode.sourceString,
+    };
+  },
+
+  MethodCall(_open, methods, _close) {
+    return {
+      type: "methodCall",
+      keys: methods.asIteration().toPOIResponse(),
     };
   },
 
@@ -117,93 +124,5 @@ semantics.addOperation("toPOIResponse", {
 
   RollFail(_open, statements) {
     return statements.children.map((s) => s.toPOIResponse()).join("");
-  },
-
-  MethodDeclaration(_open, bodyNode, _close) {
-    return bodyNode.toPOIResponse();
-  },
-
-  ObjectMethod(idNode, actionsNode) {
-    const methodName = idNode.toPOIResponse();
-    // actionsNode.children maps directly to individual Action AST nodes
-    const actions = actionsNode.children.map((actionNode) =>
-      actionNode.toPOIResponse(),
-    );
-
-    const compileMethod: POIMethod = (currentState: POIState): POIState => {
-      const nextState = { ...currentState };
-
-      for (const act of actions) {
-        const { type, target, degree } = act;
-
-        switch (type) {
-          case "set":
-            nextState[target] = degree;
-            break;
-          case "inc":
-            nextState[target] =
-              (Number(nextState[target]) || 0) + (Number(degree) || 1);
-            break;
-          case "dec":
-            if (
-              typeof nextState[target] !== "number" &&
-              nextState[target] !== undefined
-            ) {
-              throw new Error(`State ${target} is not a number!`);
-            }
-            nextState[target] =
-              (Number(nextState[target]) || 0) - (Number(degree) || 1);
-            break;
-          case "flip":
-            nextState[target] = !nextState[target];
-            break;
-          case "true":
-            nextState[target] = true;
-            break;
-          case "untrue":
-            nextState[target] = false;
-            break;
-        }
-      }
-      return nextState;
-    };
-
-    return {
-      type: "method",
-      name: methodName,
-      method: compileMethod,
-    };
-  },
-
-  Action(typeNode, targetIdNode, degreeNode) {
-    return {
-      type: typeNode.sourceString,
-      target: targetIdNode.toPOIResponse(),
-      degree: degreeNode.children[0]?.toPOIResponse(),
-    };
-  },
-
-  Identifier(_nameNode) {
-    return this.sourceString;
-  },
-
-  NumberLiteral(_digits) {
-    return parseInt(this.sourceString, 10);
-  },
-
-  ActionDegree(val) {
-    return val.toPOIResponse();
-  },
-
-  StringLiteral(_open, chars, _close) {
-    return chars.sourceString;
-  },
-
-  Approach(_val) {
-    return this.sourceString;
-  },
-
-  Skill(_val) {
-    return this.sourceString;
   },
 });

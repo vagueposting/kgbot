@@ -30,10 +30,7 @@ export interface TruePOIConstructor {
 
 export type ValidStates = string | number | boolean;
 export type POIState = Record<string, ValidStates>;
-export type POIMethod = (
-  currentState: POIState,
-  ...args: ValidStates[]
-) => POIState;
+export type POIMethod = (currentState: POIState) => POIState;
 
 export type ResponseRolls = {
   roll_dc?: number;
@@ -96,10 +93,12 @@ export class POIResponse {
   // TODO: Move methods to the main POI class
   base: string;
   checks: ResponseRolls[];
+  methodCalls: string[];
 
   constructor(base: string) {
     this.base = base;
     this.checks = [];
+    this.methodCalls = [];
   }
 
   addCheck(checkData: ResponseRolls) {
@@ -220,7 +219,7 @@ export class POI {
     const method = this.methods[methodName];
     if (!method)
       throw new Error(`Method named ${methodName} not found on POI.`);
-    this.state = method(this.state, ...args);
+    this.state = method(this.state);
   }
 
   resolveAction(inputAction: string): string {

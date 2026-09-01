@@ -1,0 +1,23 @@
+MethodScript {
+    Program = Action+
+
+    Action = ActionType StateIdentifier ActionDegree?
+
+    ActionType = "dec" | "inc" | "set"
+                | "flip" | "true" | "untrue"
+
+    ActionDegree = StringLiteral | NumberLiteral
+
+    StateIdentifier = PlayerStuff | Identifier
+    PlayerStuff = "pockets" | "thoughts"
+    Identifier = ~Keyword name
+    name = letter alnum*
+
+    Keyword = ActionType | BooleanLiteral
+    Value = StringLiteral | NumberLiteral | BooleanLiteral
+    StringLiteral = "\"" (~"\"" any)* "\""
+    NumberLiteral = digit+
+    BooleanLiteral = "true" | "false"
+
+    space += "\x00".."\x20"
+}

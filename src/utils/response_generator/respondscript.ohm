@@ -3,7 +3,7 @@ RespondScript {
 
   Default = Display+
  
-  Statement = MethodDeclaration 
+  Statement = MethodCall
             | ConditionalBlock
             | RollDeclaration
             | Display
@@ -16,12 +16,7 @@ RespondScript {
   PlayerState = "{{P" PlayerStuff "}}"
   PlayerStuff = "pockets" | "thoughts" // TODO: add more. but i'll get there as i design.
  
-  MethodDeclaration = "{{&" MethodBody "}}"
-  MethodBody = ObjectMethod | PlayerMethod
-	ObjectMethod =  Identifier Action*
-  Action = ActionType Identifier ActionDegree?
-  PlayerMethod = PlayerStuff MetaCode
-  MetaCode = (letter alnum)*
+  MethodCall = "{{&" listOf<Identifier, ","> "}}"
   
   ConditionalBlock = IfClause ElseIfClause* ElseClause? "{{/?}}"
   IfClause         = "{{?" Condition "}}" Statement*
