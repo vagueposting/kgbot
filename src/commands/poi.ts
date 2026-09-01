@@ -9,6 +9,7 @@ import {
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
 import {
+  parseActionGroups,
   POI,
   POIResponse,
   POIRow,
@@ -315,6 +316,8 @@ module.exports = {
 
     switch (subcommand) {
       case "create": {
+        const rawActions = interaction.options.getString("poi_actions") ?? "";
+        const { canonicalActions, aliasMap } = parseActionGroups(rawActions);
         const poiDetails: TruePOIConstructor = {
           name: interaction.options.getString("poi_name", true),
           code: generateRandomString(5),
@@ -323,12 +326,11 @@ module.exports = {
           aliases: convertToArray(
             interaction.options.getString("poi_aliases") ?? "",
           ),
-          actionsOrResponses: convertToArray(
-            interaction.options.getString("poi_actions") ?? "",
-          ),
+          actionsOrResponses: canonicalActions, // Only initializes primary keys
         };
 
         const poi = await POI.create(poiDetails);
+        poi.actionAliases = aliasMap;
 
         const db = getDb();
         const insertStmt = db.prepare(

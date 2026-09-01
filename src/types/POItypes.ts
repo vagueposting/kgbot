@@ -135,6 +135,7 @@ export class POI {
   state: POIState = {};
   methods: Record<string, POIMethod> = {};
   responses: Record<string, POIResponse> = {};
+  actionAliases: Record<string, string> = {};
   metrics: {
     created: number;
     lastInteracted: {
@@ -220,6 +221,11 @@ export class POI {
     if (!method)
       throw new Error(`Method named ${methodName} not found on POI.`);
     this.state = method(this.state, ...args);
+  }
+
+  resolveAction(inputAction: string): string {
+    const cleanInput = inputAction.trim().toLowerCase();
+    return this.actionAliases[cleanInput] ?? cleanInput;
   }
 
   evaluateResponse(actionKey: string, playerId: string) {
