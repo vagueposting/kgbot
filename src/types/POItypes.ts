@@ -1,5 +1,6 @@
 import { getDb } from "../db/setup";
 import { getParentId } from "../utils/getParentId";
+import { parseMethodScript } from "../utils/parseMethod";
 import { Approaches } from "./approaches";
 import { SkillTags } from "./skilltags";
 import { CommandInteraction, Guild } from "discord.js";
@@ -17,6 +18,10 @@ export interface POIJsonPayload {
   guildId: string;
   aliases: string[];
   responses: Record<string, POIResponse>;
+  methodScripts: Record<string, string>;
+  group: string;
+  exempt: boolean;
+  metrics: POIMetrics;
 }
 
 export interface TruePOIConstructor {
@@ -26,6 +31,18 @@ export interface TruePOIConstructor {
   guild: Guild | null;
   aliases: string[];
   actionsOrResponses: string[] | Record<string, POIResponse>;
+  group: string;
+  shouldBeExempt: boolean;
+  metrics: POIMetrics;
+}
+
+interface POIMetrics {
+  created: number;
+  lastInteracted: {
+    dateTime: number | null;
+    player: string | null;
+  };
+  timesInteracted: number;
 }
 
 export type ValidStates = string | number | boolean;
@@ -90,7 +107,6 @@ export function parseActionGroups(input: string): ParsedActions {
 }
 
 export class POIResponse {
-  // TODO: Move methods to the main POI class
   base: string;
   checks: ResponseRolls[];
   methodCalls: string[];
@@ -133,15 +149,14 @@ export class POI {
   guildId?: string;
   state: POIState = {};
   methods: Record<string, POIMethod> = {};
+  methodScripts: Record<string, string> = {};
   responses: Record<string, POIResponse> = {};
   actionAliases: Record<string, string> = {};
-  metrics: {
-    created: number;
-    lastInteracted: {
-      dateTime: number | null;
-      player: string | null;
-    };
-    timesInteracted: number;
+  metrics: POIMetrics;
+  group: string;
+  active: {
+    current: boolean;
+    exempt: boolean;
   };
 
   private constructor(
@@ -151,19 +166,31 @@ export class POI {
     guildId: string,
     aliases: string[] = [],
     actionsOrResponses: string[] | Record<string, POIResponse> = [],
+    group: string,
+    shouldBeExempt: boolean,
+    metrics?: POIMetrics,
   ) {
     this.name = name;
     this.code = code;
     this.channel = channel;
     this.guildId = guildId;
     this.aliases = aliases;
-    this.metrics = {
-      created: Math.floor(Date.now() / 1000),
-      lastInteracted: {
-        dateTime: null,
-        player: null,
-      },
-      timesInteracted: 0,
+    this.metrics = metrics
+      ? metrics
+      : {
+          // Creates a blank metrics state
+          // if no metrics value is passed
+          created: Math.floor(Date.now() / 1000),
+          lastInteracted: {
+            dateTime: null,
+            player: null,
+          },
+          timesInteracted: 0,
+        };
+    this.group = group;
+    this.active = {
+      current: true,
+      exempt: shouldBeExempt,
     };
 
     if (Array.isArray(actionsOrResponses)) {
@@ -179,7 +206,17 @@ export class POI {
   }
 
   static async create(obj: TruePOIConstructor): Promise<POI> {
-    const { name, code, channel, guild, aliases, actionsOrResponses } = obj;
+    const {
+      name,
+      code,
+      channel,
+      guild,
+      aliases,
+      actionsOrResponses,
+      metrics,
+      group,
+      shouldBeExempt,
+    } = obj;
 
     if (!guild) {
       throw new Error("POI cannot be created in DMs");
@@ -192,6 +229,8 @@ export class POI {
       guild.id,
       aliases,
       actionsOrResponses,
+      group,
+      shouldBeExempt,
     );
 
     const parentID = await getParentId(channel, guild);
@@ -208,6 +247,19 @@ export class POI {
 
     const payload = this.toJSON();
 
+    const db = getDb();
+    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
+      payload,
+      this.code,
+    );
+  }
+
+  async registerMethod(methodName: string, scriptText: string) {
+    this.methods[methodName] = parseMethodScript(scriptText);
+
+    this.methodScripts[methodName] = scriptText;
+
+    const payload = this.toJSON();
     const db = getDb();
     db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
       payload,
@@ -253,6 +305,10 @@ export class POI {
       guildId: this.guildId!,
       aliases: this.aliases,
       responses: this.responses,
+      methodScripts: this.methodScripts,
+      metrics: this.metrics,
+      group: this.group,
+      exempt: this.active.exempt,
     };
     return JSON.stringify(payload);
   }
@@ -267,7 +323,17 @@ export class POI {
       guild: guild,
       aliases: parsed.aliases ?? [],
       actionsOrResponses: parsed.responses ?? {},
+      group: parsed.group,
+      shouldBeExempt: parsed.exempt,
+      metrics: parsed.metrics,
     });
+
+    if (parsed.methodScripts) {
+      poi.methodScripts = parsed.methodScripts;
+      for (const [name, script] of Object.entries(parsed.methodScripts)) {
+        poi.methods[name] = parseMethodScript(script);
+      }
+    }
 
     poi.id = row.id;
     poi.guildId = parsed.guildId;
