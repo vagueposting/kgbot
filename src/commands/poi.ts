@@ -64,6 +64,18 @@ module.exports = {
             .setDescription(
               "List all actions (verbs) that can be done to the point of interest, separated by commas.",
             ),
+        )
+        .addStringOption((option) =>
+          option
+            .setName("poi_group")
+            .setDescription("Group that the POI is part of. Optional."),
+        )
+        .addBooleanOption((option) =>
+          option
+            .setName("poi_exemptable")
+            .setDescription(
+              "Will this POI have its own activity switch? False by default.",
+            ),
         ),
     )
     .addSubcommandGroup((group) =>
@@ -332,6 +344,7 @@ module.exports = {
     switch (subcommand) {
       case "create": {
         const rawActions = interaction.options.getString("poi_actions") ?? "";
+
         const { canonicalActions, aliasMap } = parseActionGroups(rawActions);
         const poiDetails: TruePOIConstructor = {
           name: interaction.options.getString("poi_name", true),
@@ -342,6 +355,9 @@ module.exports = {
             interaction.options.getString("poi_aliases") ?? "",
           ),
           actionsOrResponses: canonicalActions, // Only initializes primary keys
+          group: interaction.options.getString("poi_group") ?? "",
+          shouldBeExempt:
+            interaction.options.getBoolean("poi_exemptable") ?? false,
         };
 
         const poi = await POI.create(poiDetails);
@@ -349,11 +365,13 @@ module.exports = {
 
         const db = getDb();
         const insertStmt = db.prepare(
-          `INSERT INTO poi (code, category, data) VALUES (?, ?, ?)`,
+          `INSERT INTO poi (code, channel, category, group, data) VALUES (?, ?, ?, ?, ?)`,
         );
         insertStmt.run(
           poi.code,
+          poi.channel,
           interaction.guild?.channels.cache.get(poi.channel)!.parentId,
+          poi.group,
           poi.toJSON(),
         );
 

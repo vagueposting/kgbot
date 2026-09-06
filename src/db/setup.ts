@@ -21,6 +21,7 @@ export function setupDatabase(): void {
       code TEXT UNIQUE NOT NULL,
       channel TEXT UNIQUE NOT NULL,
       category TEXT UNIQUE NOT NULL,
+      group TEXT UNIQUE NOT NULL,
       data TEXT NOT NULL
     );
 

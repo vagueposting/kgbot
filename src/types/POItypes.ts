@@ -18,7 +18,8 @@ export interface POIJsonPayload {
   guildId: string;
   aliases: string[];
   responses: Record<string, POIResponse>;
-  methodScripts: Record<string, string>;
+  methodScripts?: Record<string, string>;
+  actionAliases?: Record<string, string>;
   group: string;
   exempt: boolean;
   metrics: POIMetrics;
@@ -33,7 +34,8 @@ export interface TruePOIConstructor {
   actionsOrResponses: string[] | Record<string, POIResponse>;
   group: string;
   shouldBeExempt: boolean;
-  metrics: POIMetrics;
+  metrics?: POIMetrics; /* This is only 
+    required when I'm retrieving existing POI data. */
 }
 
 interface POIMetrics {
@@ -306,6 +308,7 @@ export class POI {
       aliases: this.aliases,
       responses: this.responses,
       methodScripts: this.methodScripts,
+      actionAliases: this.actionAliases,
       metrics: this.metrics,
       group: this.group,
       exempt: this.active.exempt,
@@ -327,6 +330,8 @@ export class POI {
       shouldBeExempt: parsed.exempt,
       metrics: parsed.metrics,
     });
+
+    poi.actionAliases = parsed.actionAliases ?? {};
 
     if (parsed.methodScripts) {
       poi.methodScripts = parsed.methodScripts;
