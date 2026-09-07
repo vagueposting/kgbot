@@ -256,10 +256,22 @@ export class POI {
     );
   }
 
-  async registerMethod(methodName: string, scriptText: string) {
+  registerMethod(methodName: string, scriptText: string) {
     this.methods[methodName] = parseMethodScript(scriptText);
 
     this.methodScripts[methodName] = scriptText;
+
+    const payload = this.toJSON();
+    const db = getDb();
+    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
+      payload,
+      this.code,
+    );
+  }
+
+  removeMethod(methodName: string) {
+    delete this.methods[methodName];
+    delete this.methodScripts[methodName];
 
     const payload = this.toJSON();
     const db = getDb();

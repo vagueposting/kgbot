@@ -27,6 +27,7 @@ import { paginateData } from "../utils/pagination";
 import { fetchPOIData } from "../utils/autocomplete/fetchPOIData";
 import { semantics } from "../utils/response_generator/respondscriptDefs";
 import { parseResponseScript } from "../utils/parseResponse";
+import { parseMethodScript } from "../utils/parseMethod";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -139,6 +140,59 @@ module.exports = {
                 .setRequired(true),
             ),
         ),
+    )
+    .addSubcommandGroup((group) =>
+      group
+        .setName("methods")
+        .setDescription("Command group for managing methods.")
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("add")
+            .setDescription("GM command. Add a method to the POI.")
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription("Code for the POI you want to add a method to.")
+                .setRequired(true)
+                .setAutocomplete(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("method_name")
+                .setDescription(
+                  "Name of the method that you are adding to the POI.",
+                )
+                .setRequired(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("method_script")
+                .setDescription(
+                  "MethodScript that shows what it does.See documentation.",
+                )
+                .setRequired(true),
+            ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("remove") // TODO: add exec and autocomplete
+            .setDescription("GM command. Removes a method from a POI.")
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription(
+                  "Code for the POI with the method you want to remove.",
+                )
+                .setAutocomplete(true)
+                .setRequired(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("method_name")
+                .setDescription("Name of the method you want to remove.")
+                .setRequired(true),
+            ),
+        ),
     ),
 
   async autocomplete(interaction: AutocompleteInteraction) {
@@ -228,6 +282,32 @@ module.exports = {
         await interaction.respond(choices);
       }
     }
+
+    if (group === "methods") {
+      const focusedOption = interaction.options.getFocused(true);
+      if (focusedOption.name === "poi_code") {
+        const choices = fetchPOIData(
+          focusedOption.value.toString(),
+          interaction,
+        );
+        await interaction.respond(choices);
+      }
+
+      if (subcommand === "remove" && focusedOption.name === "method_name") {
+        const targetPOI = interaction.options.getString("poi_code", true);
+
+        const poi = await extractPOIData(targetPOI);
+
+        if (!poi) return;
+
+        const choices = Object.keys(poi.methods).map((m) => ({
+          name: m,
+          value: m,
+        }));
+
+        await interaction.respond(choices);
+      }
+    }
   },
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -308,12 +388,20 @@ module.exports = {
             `DELETE FROM poi WHERE code = ? RETURNING *`,
           );
           const deletedPOI = deleterStmt.get(target);
+          let message: string;
 
           if (deletedPOI) {
             console.log(`PoI with the code ${target} has been deleted.`);
+            message = `Successfully deleted POI with code ${target}.`;
           } else {
             console.error(`PoI with the code ${target} does not exist.`);
+            message = `A POI with the code ${target} does not exist.`;
           }
+
+          await interaction.reply({
+            content: message,
+            flags: MessageFlags.Ephemeral,
+          });
           break;
         default:
           break;
@@ -323,22 +411,88 @@ module.exports = {
 
     if (group === "responses") {
       switch (subcommand) {
-        case "modify":
+        case "modify": {
           const poiCode = interaction.options.getString("poi_code");
           const action = interaction.options.getString("action");
           const responseCode = interaction.options.getString("response_data");
           if (typeof responseCode !== "string" || !poiCode || !action) return;
+          let message: string;
 
           const newResponse = parseResponseScript(responseCode);
           const targetPOI = await readPoiByCode(poiCode);
 
           if (targetPOI !== undefined) {
             await targetPOI.modifyResponse(action, newResponse);
+            message = `POI **${poiCode}** successfully modified!`;
+          } else {
+            message = `POI **${poiCode}** does not exist. Maybe there's a typo?`;
           }
 
+          await interaction.reply({
+            content: message,
+            flags: MessageFlags.Ephemeral,
+          });
+
           break;
+        }
       }
       return;
+    }
+
+    if (group === "methods") {
+      switch (subcommand) {
+        case "add": {
+          const targetPOI = interaction.options.getString("poi_code", true);
+          const methodName = interaction.options.getString("method_name", true);
+          const methodScript = interaction.options.getString(
+            "method_script",
+            true,
+          );
+          let message: string;
+
+          const poi = await extractPOIData(targetPOI);
+
+          if (poi) {
+            if (!poi.methods[methodName])
+              throw new Error(`Method under ${methodName} does not exist.`);
+
+            poi.registerMethod(methodName, methodScript);
+            message = `Succcessfully registered method \`${methodName}\` under POI **${targetPOI}**`;
+          } else {
+            message = `Could not register \`${methodName}\` under POI **${targetPOI}** Reason: ${targetPOI} does not exist.`;
+          }
+
+          await interaction.reply({
+            content: message,
+            flags: MessageFlags.Ephemeral,
+          });
+
+          break;
+        }
+        case "remove": {
+          const targetPOI = interaction.options.getString("poi_code", true);
+          const methodName = interaction.options.getString("method_name", true);
+          let message: string;
+
+          const poi = await extractPOIData(targetPOI);
+
+          if (poi) {
+            if (!poi.methods[methodName])
+              throw new Error(`Method under ${methodName} does not exist.`);
+
+            poi.removeMethod(methodName);
+            message = `Removed \`${methodName}\` under POI **${targetPOI}** Reason: ${targetPOI} does not exist.`;
+          } else {
+            message = `Could not remove  \`${methodName}\` under POI **${targetPOI}** Reason: ${targetPOI} does not exist.`;
+          }
+
+          await interaction.reply({
+            content: message,
+            flags: MessageFlags.Ephemeral,
+          });
+          break;
+        }
+      }
     }
 
     switch (subcommand) {
@@ -365,7 +519,7 @@ module.exports = {
 
         const db = getDb();
         const insertStmt = db.prepare(
-          `INSERT INTO poi (code, channel, category, group, data) VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO poi (code, channel, category, "group", data) VALUES (?, ?, ?, ?, ?)`,
         );
         insertStmt.run(
           poi.code,
