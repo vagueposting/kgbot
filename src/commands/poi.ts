@@ -143,7 +143,23 @@ module.exports = {
         .addSubcommand((subcommand) =>
           subcommand
             .setName("view")
-            .setDescription("View an individual response."),
+            .setDescription("GM command. View an individual response's code.")
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription(
+                  "Code for the POI whose response you want to view.",
+                )
+                .setAutocomplete(true)
+                .setRequired(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("action")
+                .setDescription("Action in the POI that you want to view.")
+                .setAutocomplete(true)
+                .setRequired(true),
+            ),
         ),
     )
     .addSubcommandGroup((group) =>
@@ -196,6 +212,25 @@ module.exports = {
                 .setName("method_name")
                 .setDescription("Name of the method you want to remove.")
                 .setRequired(true),
+            ),
+        ),
+    )
+    .addSubcommandGroup((group) =>
+      group // TODO: add an embed viewer.
+        .setName("aliases")
+        .setDescription("Command group for POI aliases.")
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("add")
+            .setDescription("GM command. View response aliases.")
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription(
+                  "Code for the POI whose aliases you want to edit.",
+                )
+                .setRequired(true)
+                .setAutocomplete(true),
             ),
         ),
     ),
@@ -439,6 +474,17 @@ module.exports = {
 
           break;
         }
+        case "view":
+          const poiCode = interaction.options.getString("poi_code");
+
+          if (!poiCode) return;
+
+          const poi = await extractPOIData(poiCode);
+
+          // TODO: make an embed and reply it.
+          // I just want to work on this in another
+          // branch. :p
+          break;
       }
       return;
     }
