@@ -1,4 +1,5 @@
 import { getDb } from "../db/setup";
+import { convertToArray } from "../utils/convertToArray";
 import { getParentId } from "../utils/getParentId";
 import { parseMethodScript } from "../utils/parseMethod";
 import { parseResponseScript } from "../utils/parseResponse";
@@ -246,51 +247,42 @@ export class POI {
     return poi;
   }
 
-  async modifyResponse(actionKey: string, originalScript: string) {
+  modifyResponse(actionKey: string, originalScript: string) {
     const responseData = parseResponseScript(originalScript);
     this.responses[actionKey] = responseData;
     this.responses[actionKey].script = originalScript;
 
-    const payload = this.toJSON();
-
-    const db = getDb();
-    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
-      payload,
-      this.code,
-    );
+    this.writeToData();
   }
 
-  async updateActionsAndAliases(rawInput: string) {
+  updateObjectAliases(rawInput: string) {
+    this.aliases = convertToArray(rawInput);
+
+    return this.aliases;
+  }
+
+  updateActionAliases(rawInput: string) {
     const { canonicalActions, aliasMap } = parseActionGroups(rawInput);
-    const oldActions = Object.keys(this.responses);
 
-    const orphanedActions = oldActions.filter(
-      (action) => !canonicalActions.includes(action),
-    );
-
-    for (const orphan of orphanedActions) {
-      delete this.responses[orphan];
+    for (const canonical of canonicalActions) {
+      if (!this.responses[canonical]) {
+        this.responses[canonical] = new POIResponse("");
+      }
     }
+    const mergedAliases = {
+      ...this.actionAliases,
+      ...aliasMap,
+    };
 
-    for (const action of canonicalActions) {
-      if (!this.responses[action]) {
-        this.responses[action] = new POIResponse("");
+    const prunedAliases: Record<string, string> = {};
+    for (const [alias, targetAction] of Object.entries(mergedAliases)) {
+      if (targetAction in this.responses) {
+        prunedAliases[alias] = targetAction;
       }
     }
 
-    this.actionAliases = aliasMap;
-
-    const payload = this.toJSON();
-    const db = getDb();
-    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
-      payload,
-      this.code,
-    );
-
-    return {
-      pruned: orphanedActions,
-      added: canonicalActions.filter((a) => !oldActions.includes(a)),
-    };
+    this.actionAliases = prunedAliases;
+    this.writeToData();
   }
 
   registerMethod(methodName: string, scriptText: string) {
@@ -298,24 +290,14 @@ export class POI {
 
     this.methodScripts[methodName] = scriptText;
 
-    const payload = this.toJSON();
-    const db = getDb();
-    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
-      payload,
-      this.code,
-    );
+    this.writeToData();
   }
 
   removeMethod(methodName: string) {
     delete this.methods[methodName];
     delete this.methodScripts[methodName];
 
-    const payload = this.toJSON();
-    const db = getDb();
-    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
-      payload,
-      this.code,
-    );
+    this.writeToData();
   }
 
   execMethod(methodName: string, ...args: ValidStates[]) {
@@ -363,6 +345,16 @@ export class POI {
       exempt: this.active.exempt,
     };
     return JSON.stringify(payload);
+  }
+
+  writeToData(): void {
+    const payload = this.toJSON();
+    const db = getDb();
+    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
+      payload,
+      this.code,
+    );
+    return;
   }
 
   static async fromRow(row: POIRow, guild: Guild): Promise<POI> {

@@ -580,9 +580,23 @@ module.exports = {
 
     if (group === "aliases") {
       switch (subcommand) {
-        case "view":
+        case "view": {
+          const targetPOI = interaction.options.getString("poi_code");
+          if (!targetPOI)
+            throw new Error(
+              `You can't edit the aliases because the POI with code ${targetPOI} does not exist.`,
+            );
+          const poi = await extractPOIData(targetPOI);
+          if (!poi)
+            throw new Error(`POI with code ${targetPOI} does not exist!`);
+
+          const aliasEmbed = new EmbedBuilder()
+            .setColor("Yellow")
+            .setTitle(`Aliases for POI \`${targetPOI}\``)
+            .setDescription(`This POI, a is found in <@${poi.channel}>`);
           break;
-        case "override":
+        }
+        case "override": {
           const targetPOI = interaction.options.getString("poi_code");
           if (!targetPOI)
             throw new Error(
@@ -595,7 +609,7 @@ module.exports = {
 
           const poi = await extractPOIData(targetPOI);
 
-          poi?.updateActionsAndAliases(newAliases);
+          poi?.updateObjectAliases(newAliases);
 
           await interaction.reply({
             content: `Alias override on ${targetPOI} complete.
@@ -603,6 +617,7 @@ module.exports = {
             flags: MessageFlags.Ephemeral,
           });
           break;
+        }
       }
     }
 
