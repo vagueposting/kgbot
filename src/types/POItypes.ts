@@ -260,6 +260,39 @@ export class POI {
     );
   }
 
+  async updateActionsAndAliases(rawInput: string) {
+    const { canonicalActions, aliasMap } = parseActionGroups(rawInput);
+    const oldActions = Object.keys(this.responses);
+
+    const orphanedActions = oldActions.filter(
+      (action) => !canonicalActions.includes(action),
+    );
+
+    for (const orphan of orphanedActions) {
+      delete this.responses[orphan];
+    }
+
+    for (const action of canonicalActions) {
+      if (!this.responses[action]) {
+        this.responses[action] = new POIResponse("");
+      }
+    }
+
+    this.actionAliases = aliasMap;
+
+    const payload = this.toJSON();
+    const db = getDb();
+    db.prepare(/*sql*/ `UPDATE poi SET data = ? WHERE code = ?`).run(
+      payload,
+      this.code,
+    );
+
+    return {
+      pruned: orphanedActions,
+      added: canonicalActions.filter((a) => !oldActions.includes(a)),
+    };
+  }
+
   registerMethod(methodName: string, scriptText: string) {
     this.methods[methodName] = parseMethodScript(scriptText);
 

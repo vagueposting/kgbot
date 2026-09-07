@@ -221,8 +221,24 @@ module.exports = {
         .setDescription("Command group for POI aliases.")
         .addSubcommand((subcommand) =>
           subcommand
-            .setName("add")
+            .setName("view")
             .setDescription("GM command. View response aliases.")
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription(
+                  "Code for the POI whose aliases you want to view.",
+                )
+                .setRequired(true)
+                .setAutocomplete(true),
+            ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("override")
+            .setDescription(
+              "Overrides the actions and aliases list with a new set.",
+            )
             .addStringOption((option) =>
               option
                 .setName("poi_code")
@@ -231,6 +247,11 @@ module.exports = {
                 )
                 .setRequired(true)
                 .setAutocomplete(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("new_aliases")
+                .setDescription("The new list of aliases."),
             ),
         ),
     ),
@@ -345,6 +366,18 @@ module.exports = {
           value: m,
         }));
 
+        await interaction.respond(choices);
+      }
+    }
+
+    if (group === "aliases") {
+      const focusedOption = interaction.options.getFocused(true);
+
+      if (focusedOption.name === "poi_code") {
+        const choices = fetchPOIData(
+          focusedOption.value.toString(),
+          interaction,
+        );
         await interaction.respond(choices);
       }
     }
@@ -542,6 +575,34 @@ module.exports = {
           });
           break;
         }
+      }
+    }
+
+    if (group === "aliases") {
+      switch (subcommand) {
+        case "view":
+          break;
+        case "override":
+          const targetPOI = interaction.options.getString("poi_code");
+          if (!targetPOI)
+            throw new Error(
+              `You can't edit the aliases because the POI with code ${targetPOI} does not exist.`,
+            );
+          const newAliases = interaction.options.getString("new_aliases");
+          if (!newAliases) {
+            throw new Error("No alias overrides were provided.");
+          }
+
+          const poi = await extractPOIData(targetPOI);
+
+          poi?.updateActionsAndAliases(newAliases);
+
+          await interaction.reply({
+            content: `Alias override on ${targetPOI} complete.
+            Some actions may have been pruned. Run \`/poi aliases view\` for more details.`,
+            flags: MessageFlags.Ephemeral,
+          });
+          break;
       }
     }
 
