@@ -139,6 +139,11 @@ module.exports = {
                 )
                 .setRequired(true),
             ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("view")
+            .setDescription("View an individual response."),
         ),
     )
     .addSubcommandGroup((group) =>
@@ -418,11 +423,10 @@ module.exports = {
           if (typeof responseCode !== "string" || !poiCode || !action) return;
           let message: string;
 
-          const newResponse = parseResponseScript(responseCode);
           const targetPOI = await readPoiByCode(poiCode);
 
           if (targetPOI !== undefined) {
-            await targetPOI.modifyResponse(action, newResponse);
+            await targetPOI.modifyResponse(action, responseCode);
             message = `POI **${poiCode}** successfully modified!`;
           } else {
             message = `POI **${poiCode}** does not exist. Maybe there's a typo?`;

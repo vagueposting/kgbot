@@ -1,6 +1,7 @@
 import { getDb } from "../db/setup";
 import { getParentId } from "../utils/getParentId";
 import { parseMethodScript } from "../utils/parseMethod";
+import { parseResponseScript } from "../utils/parseResponse";
 import { Approaches } from "./approaches";
 import { SkillTags } from "./skilltags";
 import { CommandInteraction, Guild } from "discord.js";
@@ -112,6 +113,7 @@ export class POIResponse {
   base: string;
   checks: ResponseRolls[];
   methodCalls: string[];
+  script?: string;
 
   constructor(base: string) {
     this.base = base;
@@ -244,8 +246,10 @@ export class POI {
     return poi;
   }
 
-  async modifyResponse(actionKey: string, responseData: POIResponse) {
+  async modifyResponse(actionKey: string, originalScript: string) {
+    const responseData = parseResponseScript(originalScript);
     this.responses[actionKey] = responseData;
+    this.responses[actionKey].script = originalScript;
 
     const payload = this.toJSON();
 
@@ -337,13 +341,29 @@ export class POI {
       channel: parsed.channel,
       guild: guild,
       aliases: parsed.aliases ?? [],
-      actionsOrResponses: parsed.responses ?? {},
+      actionsOrResponses: {},
       group: parsed.group,
       shouldBeExempt: parsed.exempt,
       metrics: parsed.metrics,
     });
 
     poi.actionAliases = parsed.actionAliases ?? {};
+
+    if (parsed.responses) {
+      for (const [actionKey, rawResp] of Object.entries(parsed.responses)) {
+        if (rawResp.script) {
+          const responseInstance = parseResponseScript(rawResp.script);
+          responseInstance.script = rawResp.script;
+          poi.responses[actionKey] = responseInstance;
+        } else {
+          // fallback that very rarely comes up
+          const responseInstance = new POIResponse(rawResp.base ?? "");
+          responseInstance.checks = rawResp.checks ?? [];
+          responseInstance.methodCalls = rawResp.methodCalls ?? [];
+          poi.responses[actionKey] = responseInstance;
+        }
+      }
+    }
 
     if (parsed.methodScripts) {
       poi.methodScripts = parsed.methodScripts;
