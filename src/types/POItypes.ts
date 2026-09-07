@@ -19,6 +19,7 @@ export interface POIJsonPayload {
   channel: string;
   guildId: string;
   aliases: string[];
+  state: POIState;
   responses: Record<string, POIResponse>;
   methodScripts?: Record<string, string>;
   actionAliases?: Record<string, string>;
@@ -33,6 +34,7 @@ export interface TruePOIConstructor {
   channel: string;
   guild: Guild | null;
   aliases: string[];
+  state?: POIState;
   actionsOrResponses: string[] | Record<string, POIResponse>;
   group: string;
   shouldBeExempt: boolean;
@@ -174,12 +176,14 @@ export class POI {
     group: string,
     shouldBeExempt: boolean,
     metrics?: POIMetrics,
+    state: POIState = {},
   ) {
     this.name = name;
     this.code = code;
     this.channel = channel;
     this.guildId = guildId;
     this.aliases = aliases;
+    this.state = state;
     this.metrics = metrics
       ? metrics
       : {
@@ -217,6 +221,7 @@ export class POI {
       channel,
       guild,
       aliases,
+      state,
       actionsOrResponses,
       metrics,
       group,
@@ -236,6 +241,8 @@ export class POI {
       actionsOrResponses,
       group,
       shouldBeExempt,
+      metrics,
+      state ?? {},
     );
 
     const parentID = await getParentId(channel, guild);
@@ -257,6 +264,7 @@ export class POI {
 
   updateObjectAliases(rawInput: string) {
     this.aliases = convertToArray(rawInput);
+    this.writeToData();
 
     return this.aliases;
   }
@@ -337,6 +345,7 @@ export class POI {
       channel: this.channel,
       guildId: this.guildId!,
       aliases: this.aliases,
+      state: this.state,
       responses: this.responses,
       methodScripts: this.methodScripts,
       actionAliases: this.actionAliases,
@@ -366,6 +375,7 @@ export class POI {
       channel: parsed.channel,
       guild: guild,
       aliases: parsed.aliases ?? [],
+      state: parsed.state as POIState,
       actionsOrResponses: {},
       group: parsed.group,
       shouldBeExempt: parsed.exempt,
