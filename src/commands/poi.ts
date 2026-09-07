@@ -590,10 +590,20 @@ module.exports = {
           if (!poi)
             throw new Error(`POI with code ${targetPOI} does not exist!`);
 
+          const aliasList = poi.aliases.map((a) => `- ${a}`).join("\n");
+
           const aliasEmbed = new EmbedBuilder()
             .setColor("Yellow")
             .setTitle(`Aliases for POI \`${targetPOI}\``)
-            .setDescription(`This POI, a is found in <@${poi.channel}>`);
+            .setDescription(
+              `This POI, **${poi.name}**, is found in <@${poi.channel}>.
+              **Aliases**
+              ${aliasList}`,
+            );
+
+          await interaction.reply({
+            embeds: [aliasEmbed],
+          });
           break;
         }
         case "override": {
@@ -612,8 +622,7 @@ module.exports = {
           poi?.updateObjectAliases(newAliases);
 
           await interaction.reply({
-            content: `Alias override on ${targetPOI} complete.
-            Some actions may have been pruned. Run \`/poi aliases view\` for more details.`,
+            content: `Alias override on ${targetPOI} complete.`,
             flags: MessageFlags.Ephemeral,
           });
           break;
