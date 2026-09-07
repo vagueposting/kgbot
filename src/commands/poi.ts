@@ -254,6 +254,25 @@ module.exports = {
                 .setDescription("The new list of aliases."),
             ),
         ),
+    )
+    .addSubcommandGroup((group) =>
+      group
+        .setName("state")
+        .setDescription("Command group for states.")
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("view")
+            .setDescription("Prints the current state of the State")
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription(
+                  "Code for the POI whose state you want to view.",
+                )
+                .setRequired(true)
+                .setAutocomplete(true),
+            ),
+        ),
     ),
 
   async autocomplete(interaction: AutocompleteInteraction) {
@@ -371,6 +390,18 @@ module.exports = {
     }
 
     if (group === "aliases") {
+      const focusedOption = interaction.options.getFocused(true);
+
+      if (focusedOption.name === "poi_code") {
+        const choices = fetchPOIData(
+          focusedOption.value.toString(),
+          interaction,
+        );
+        await interaction.respond(choices);
+      }
+    }
+
+    if (group === "state") {
       const focusedOption = interaction.options.getFocused(true);
 
       if (focusedOption.name === "poi_code") {
@@ -541,6 +572,7 @@ module.exports = {
                 content: `Method under ${methodName} does not exist.`,
                 flags: MessageFlags.Ephemeral,
               });
+              return;
             }
 
             poi.registerMethod(methodName, methodScript);
@@ -569,10 +601,11 @@ module.exports = {
                 content: `Method under ${methodName} does not exist.`,
                 flags: MessageFlags.Ephemeral,
               });
+              return;
             }
 
             poi.removeMethod(methodName);
-            message = `Removed \`${methodName}\` under POI **${targetPOI}** Reason: ${targetPOI} does not exist.`;
+            message = `Successfully removed \`${methodName}\` from POI **${targetPOI}**.`;
           } else {
             message = `Could not remove  \`${methodName}\` under POI **${targetPOI}** Reason: ${targetPOI} does not exist.`;
           }
@@ -655,6 +688,40 @@ module.exports = {
 
           await interaction.reply({
             content: `Alias override on **${poi.name}** (\`${targetPOI}\`) complete.${warningNote}`,
+            flags: MessageFlags.Ephemeral,
+          });
+          break;
+        }
+      }
+    }
+
+    if (group === "state") {
+      switch (subcommand) {
+        case "view": {
+          const targetPOI = interaction.options.getString("poi_code", true);
+
+          const poi = await extractPOIData(targetPOI);
+
+          if (!poi) {
+            await interaction.reply({
+              content: `ERROR: A POI with the code **${targetPOI}** could not be found.`,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
+
+          const stateString =
+            Object.entries(poi.state)
+              .map(([k, v]) => `• **${k}**: \`${v}\``)
+              .join("\n") || "No state variables initialized.";
+
+          const stateEmbed = new EmbedBuilder()
+            .setColor("Yellow")
+            .setTitle(`State for POI ${targetPOI}`)
+            .setDescription(stateString);
+
+          await interaction.reply({
+            embeds: [stateEmbed],
             flags: MessageFlags.Ephemeral,
           });
           break;
