@@ -216,7 +216,7 @@ module.exports = {
         ),
     )
     .addSubcommandGroup((group) =>
-      group // TODO: add an embed viewer.
+      group
         .setName("aliases")
         .setDescription("Command group for POI aliases.")
         .addSubcommand((subcommand) =>
@@ -536,8 +536,12 @@ module.exports = {
           const poi = await extractPOIData(targetPOI);
 
           if (poi) {
-            if (!poi.methods[methodName])
-              throw new Error(`Method under ${methodName} does not exist.`);
+            if (!poi.methods[methodName]) {
+              await interaction.reply({
+                content: `Method under ${methodName} does not exist.`,
+                flags: MessageFlags.Ephemeral,
+              });
+            }
 
             poi.registerMethod(methodName, methodScript);
             message = `Succcessfully registered method \`${methodName}\` under POI **${targetPOI}**`;
@@ -560,8 +564,12 @@ module.exports = {
           const poi = await extractPOIData(targetPOI);
 
           if (poi) {
-            if (!poi.methods[methodName])
-              throw new Error(`Method under ${methodName} does not exist.`);
+            if (!poi.methods[methodName]) {
+              await interaction.reply({
+                content: `Method under ${methodName} does not exist.`,
+                flags: MessageFlags.Ephemeral,
+              });
+            }
 
             poi.removeMethod(methodName);
             message = `Removed \`${methodName}\` under POI **${targetPOI}** Reason: ${targetPOI} does not exist.`;
@@ -582,13 +590,21 @@ module.exports = {
       switch (subcommand) {
         case "view": {
           const targetPOI = interaction.options.getString("poi_code");
-          if (!targetPOI)
-            throw new Error(
-              `You can't edit the aliases because the POI with code ${targetPOI} does not exist.`,
-            );
+          if (!targetPOI) {
+            await interaction.reply({
+              content: `You can't edit the aliases because the POI with code ${targetPOI} does not exist.`,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
           const poi = await extractPOIData(targetPOI);
-          if (!poi)
-            throw new Error(`POI with code ${targetPOI} does not exist!`);
+          if (!poi) {
+            await interaction.reply({
+              content: `**Error:** Could not find a POI with code **${targetPOI}**.`,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
 
           const aliasList = poi.aliases.map((a) => `- ${a}`).join("\n");
 
@@ -607,22 +623,38 @@ module.exports = {
           break;
         }
         case "override": {
-          const targetPOI = interaction.options.getString("poi_code");
-          if (!targetPOI)
-            throw new Error(
-              `You can't edit the aliases because the POI with code ${targetPOI} does not exist.`,
-            );
+          const targetPOI = interaction.options.getString("poi_code", true);
           const newAliases = interaction.options.getString("new_aliases");
-          if (!newAliases) {
-            throw new Error("No alias overrides were provided.");
+
+          if (newAliases === null) {
+            await interaction.reply({
+              content:
+                "**Error:** You must provide a list of aliases (or an empty string to clear them).",
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
           }
 
-          const poi = await extractPOIData(targetPOI);
+          const poi = await readPoiByCode(targetPOI);
 
-          poi?.updateObjectAliases(newAliases);
+          if (!poi) {
+            await interaction.reply({
+              content: `**Error:** Could not find a POI with code **${targetPOI}**.`,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
+
+          poi.updateObjectAliases(newAliases);
+
+          let warningNote = "";
+          if (newAliases.trim() === "") {
+            warningNote =
+              "\n***Note:** All aliases have been removed. For accessibility, having at least one alias is recommended.*";
+          }
 
           await interaction.reply({
-            content: `Alias override on ${targetPOI} complete.`,
+            content: `Alias override on **${poi.name}** (\`${targetPOI}\`) complete.${warningNote}`,
             flags: MessageFlags.Ephemeral,
           });
           break;
