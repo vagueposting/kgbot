@@ -262,12 +262,46 @@ module.exports = {
         .addSubcommand((subcommand) =>
           subcommand
             .setName("view")
-            .setDescription("Prints the current state of the State")
+            .setDescription("GM command. Prints the current state of the State")
             .addStringOption((option) =>
               option
                 .setName("poi_code")
                 .setDescription(
                   "Code for the POI whose state you want to view.",
+                )
+                .setRequired(true)
+                .setAutocomplete(true),
+            ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("set")
+            .setDescription("GM command. Sets the base state of the POI.")
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription("Code for the POI whose state you want to set.")
+                .setRequired(true)
+                .setAutocomplete(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("state_list")
+                .setDescription("The assignment for all item states.")
+                .setRequired(true),
+            ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("reset")
+            .setDescription(
+              "GM command. Resets the current state to the base form.",
+            )
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription(
+                  "Code for the POI whose state you want to reset.",
                 )
                 .setRequired(true)
                 .setAutocomplete(true),
