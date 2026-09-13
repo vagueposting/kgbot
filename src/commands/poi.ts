@@ -28,6 +28,7 @@ import { fetchPOIData } from "../utils/autocomplete/fetchPOIData";
 import { semantics } from "../utils/response_generator/respondscriptDefs";
 import { parseResponseScript } from "../utils/parseResponse";
 import { parseMethodScript } from "../utils/parseMethod";
+import { parseStateScript } from "../utils/parseState";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -41,7 +42,7 @@ module.exports = {
         )
         .addStringOption((option) =>
           option
-            .setName("poi_name")
+            .setName("name")
             .setDescription("Name of the point of interest")
             .setRequired(true),
         )
@@ -53,27 +54,30 @@ module.exports = {
             .setAutocomplete(true),
         )
         .addStringOption((option) =>
+          option.setName("state").setDescription("State setup code."),
+        )
+        .addStringOption((option) =>
           option
-            .setName("poi_aliases")
+            .setName("aliases")
             .setDescription(
               "List all aliases for the point of interest, separated by commas.",
             ),
         )
         .addStringOption((option) =>
           option
-            .setName("poi_actions")
+            .setName("actions")
             .setDescription(
               "List all actions (verbs) that can be done to the point of interest, separated by commas.",
             ),
         )
         .addStringOption((option) =>
           option
-            .setName("poi_group")
+            .setName("group")
             .setDescription("Group that the POI is part of. Optional."),
         )
         .addBooleanOption((option) =>
           option
-            .setName("poi_exemptable")
+            .setName("exemptable")
             .setDescription(
               "Will this POI have its own activity switch? False by default.",
             ),
@@ -686,22 +690,19 @@ module.exports = {
     }
 
     if (group === "state") {
+      const targetPOI = interaction.options.getString("poi_code", true);
+      const poi = await extractPOIData(targetPOI);
+      if (!poi) {
+        await interaction.reply({
+          content: `ERROR: A POI with the code **${targetPOI}** could not be found.`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
       switch (subcommand) {
         case "view": {
-          const targetPOI = interaction.options.getString("poi_code", true);
-
-          const poi = await extractPOIData(targetPOI);
-
-          if (!poi) {
-            await interaction.reply({
-              content: `ERROR: A POI with the code **${targetPOI}** could not be found.`,
-              flags: MessageFlags.Ephemeral,
-            });
-            return;
-          }
-
           const stateString =
-            Object.entries(poi.state)
+            Object.entries(poi.state.parsed)
               .map(([k, v]) => `• **${k}**: \`${v}\``)
               .join("\n") || "No state variables initialized.";
 
@@ -716,26 +717,37 @@ module.exports = {
           });
           break;
         }
+        case "set":
+          const newState = interaction.options.getString("state_list", true);
+          poi.setState(newState);
+          break;
+        case "reset":
+          poi.resetStateToOriginal();
+          break;
       }
     }
 
     switch (subcommand) {
       case "create": {
+        const rawState = interaction.options.getString("state") ?? "";
         const rawActions = interaction.options.getString("poi_actions") ?? "";
-
         const { canonicalActions, aliasMap } = parseActionGroups(rawActions);
+
         const poiDetails: TruePOIConstructor = {
-          name: interaction.options.getString("poi_name", true),
+          name: interaction.options.getString("name", true),
           code: generateRandomString(5),
           channel: interaction.options.getString("channel", true),
           guild: interaction.guild,
+          state: {
+            parsed: parseStateScript(rawState),
+            original: rawState,
+          },
           aliases: convertToArray(
-            interaction.options.getString("poi_aliases") ?? "",
+            interaction.options.getString("aliases") ?? "",
           ),
           actionsOrResponses: canonicalActions, // Only initializes primary keys
-          group: interaction.options.getString("poi_group") ?? "",
-          shouldBeExempt:
-            interaction.options.getBoolean("poi_exemptable") ?? false,
+          group: interaction.options.getString("group") ?? "",
+          shouldBeExempt: interaction.options.getBoolean("exemptable") ?? false,
         };
 
         const poi = await POI.create(poiDetails);

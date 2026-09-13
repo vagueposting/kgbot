@@ -3,6 +3,7 @@ import { convertToArray } from "../utils/convertToArray";
 import { getParentId } from "../utils/getParentId";
 import { parseMethodScript } from "../utils/parseMethod";
 import { parseResponseScript } from "../utils/parseResponse";
+import { parseStateScript } from "../utils/parseState";
 import { Approaches } from "./approaches";
 import { SkillTags } from "./skilltags";
 import { CommandInteraction, Guild } from "discord.js";
@@ -303,6 +304,17 @@ export class POI {
 
     this.actionAliases = prunedAliases;
     this.writeToData();
+  }
+
+  setState(rawInput: string) {
+    this.state = {
+      parsed: parseStateScript(rawInput),
+      original: rawInput,
+    };
+  }
+
+  resetStateToOriginal() {
+    this.state.parsed = parseStateScript(this.state.original ?? "");
   }
 
   registerMethod(methodName: string, scriptText: string) {
