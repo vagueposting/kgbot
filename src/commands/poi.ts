@@ -312,11 +312,19 @@ module.exports = {
   async autocomplete(interaction: AutocompleteInteraction) {
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand(false);
+    const focusedOption = interaction.options.getFocused(true);
     const db = getDb();
 
-    if (subcommand === "create") {
-      const focusedOption = interaction.options.getFocused(true);
+    // poi_code gets used repeatedly so let's just
+    // factor this out.
 
+    if (focusedOption.name === "poi_code") {
+      const choices = fetchPOIData(focusedOption.value.toString(), interaction);
+      await interaction.respond(choices);
+      return;
+    }
+
+    if (subcommand === "create") {
       if (focusedOption.name === "channel") {
         if (!interaction.guild) return interaction.respond([]);
 
@@ -350,27 +358,8 @@ module.exports = {
       }
     }
 
-    if (group === "manage") {
-      const focusedOption = interaction.options.getFocused(true);
-
-      if (focusedOption.name === "poi_code") {
-        const choices = fetchPOIData(
-          focusedOption.value.toString(),
-          interaction,
-        );
-        await interaction.respond(choices);
-      }
-    }
-
     if (group === "responses") {
-      const focusedOption = interaction.options.getFocused(true);
-      if (focusedOption.name === "poi_code") {
-        const choices = fetchPOIData(
-          focusedOption.value.toString(),
-          interaction,
-        );
-        await interaction.respond(choices);
-      } else if (focusedOption.name === "action") {
+      if (focusedOption.name === "action") {
         const activePOI = interaction.options.getString("poi_code");
 
         if (!activePOI) {
@@ -398,51 +387,18 @@ module.exports = {
     }
 
     if (group === "methods") {
-      const focusedOption = interaction.options.getFocused(true);
-      if (focusedOption.name === "poi_code") {
-        const choices = fetchPOIData(
-          focusedOption.value.toString(),
-          interaction,
-        );
-        await interaction.respond(choices);
-      }
-
       if (subcommand === "remove" && focusedOption.name === "method_name") {
         const targetPOI = interaction.options.getString("poi_code", true);
 
         const poi = await extractPOIData(targetPOI);
 
-        if (!poi) return;
+        if (!poi) return await interaction.respond([]);
 
         const choices = Object.keys(poi.methods).map((m) => ({
           name: m,
           value: m,
         }));
 
-        await interaction.respond(choices);
-      }
-    }
-
-    if (group === "aliases") {
-      const focusedOption = interaction.options.getFocused(true);
-
-      if (focusedOption.name === "poi_code") {
-        const choices = fetchPOIData(
-          focusedOption.value.toString(),
-          interaction,
-        );
-        await interaction.respond(choices);
-      }
-    }
-
-    if (group === "state") {
-      const focusedOption = interaction.options.getFocused(true);
-
-      if (focusedOption.name === "poi_code") {
-        const choices = fetchPOIData(
-          focusedOption.value.toString(),
-          interaction,
-        );
         await interaction.respond(choices);
       }
     }
