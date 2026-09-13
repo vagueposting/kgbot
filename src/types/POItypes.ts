@@ -19,7 +19,7 @@ export interface POIJsonPayload {
   channel: string;
   guildId: string;
   aliases: string[];
-  state: POIState;
+  state: { parsed: POIState; original: string };
   responses: Record<string, POIResponse>;
   methodScripts?: Record<string, string>;
   actionAliases?: Record<string, string>;
@@ -34,7 +34,10 @@ export interface TruePOIConstructor {
   channel: string;
   guild: Guild | null;
   aliases: string[];
-  state?: POIState;
+  state?: {
+    parsed?: POIState;
+    original?: string;
+  };
   actionsOrResponses: string[] | Record<string, POIResponse>;
   group: string;
   shouldBeExempt: boolean;
@@ -154,7 +157,10 @@ export class POI {
   aliases: string[];
   channel: string;
   guildId?: string;
-  state: POIState = {};
+  state: {
+    parsed: POIState;
+    original: string;
+  } = { parsed: {}, original: "" };
   methods: Record<string, POIMethod> = {};
   methodScripts: Record<string, string> = {};
   responses: Record<string, POIResponse> = {};
@@ -176,14 +182,17 @@ export class POI {
     group: string,
     shouldBeExempt: boolean,
     metrics?: POIMetrics,
-    state: POIState = {},
+    state: { parsed?: POIState; original?: string } = {},
   ) {
     this.name = name;
     this.code = code;
     this.channel = channel;
     this.guildId = guildId;
     this.aliases = aliases;
-    this.state = state;
+    this.state = {
+      parsed: state.parsed ?? {},
+      original: state.original ?? "",
+    };
     this.metrics = metrics
       ? metrics
       : {
@@ -242,7 +251,10 @@ export class POI {
       group,
       shouldBeExempt,
       metrics,
-      state ?? {},
+      state ?? {
+        parsed: {},
+        original: "",
+      },
     );
 
     const parentID = await getParentId(channel, guild);
@@ -308,11 +320,11 @@ export class POI {
     this.writeToData();
   }
 
-  execMethod(methodName: string, ...args: ValidStates[]) {
+  execMethod(methodName: string) {
     const method = this.methods[methodName];
     if (!method)
       throw new Error(`Method named ${methodName} not found on POI.`);
-    this.state = method(this.state);
+    this.state.parsed = method(this.state.parsed);
   }
 
   resolveAction(inputAction: string): string {
@@ -331,7 +343,7 @@ export class POI {
       player: playerId,
     };
 
-    const renderedBase = response.renderBase(this.state);
+    const renderedBase = response.renderBase(this.state.parsed);
 
     return {
       text: renderedBase,
@@ -375,7 +387,7 @@ export class POI {
       channel: parsed.channel,
       guild: guild,
       aliases: parsed.aliases ?? [],
-      state: parsed.state as POIState,
+      state: parsed.state,
       actionsOrResponses: {},
       group: parsed.group,
       shouldBeExempt: parsed.exempt,
