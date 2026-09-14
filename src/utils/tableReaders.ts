@@ -8,11 +8,19 @@ export async function readAllPois(guild: Guild): Promise<POI[]> {
   return await Promise.all(rows.map((row) => POI.fromRow(row, guild)));
 }
 
-export async function readPoiByCode(code: string): Promise<POI | undefined> {
+export async function readPoiByCode(
+  code: string,
+  guild: Guild,
+): Promise<POI | undefined> {
   const db = getDb();
-  return db.prepare("SELECT * FROM poi WHERE code = ?").get(code) as
-    | POI
-    | undefined;
+
+  const row = db
+    .prepare<[string], POIRow>(`SELECT * FROM poi WHERE code = ?`)
+    .get(code);
+
+  if (!row) return undefined;
+
+  return POI.fromRow(row, guild);
 }
 
 export async function getValidPOICategories(): Promise<string[]> {
@@ -37,19 +45,4 @@ export async function validatePOICategory(id: string) {
     .get(id);
 
   return isItThere;
-}
-
-export async function extractPOIData(code: string): Promise<POI | undefined> {
-  const db = getDb();
-
-  const row = db
-    .prepare<
-      [string],
-      { data: string }
-    >(/*sql*/ `SELECT data FROM poi WHERE code = ?`)
-    .get(code);
-
-  if (!row || typeof row.data !== "string") return;
-
-  return JSON.parse(row.data) as POI;
 }

@@ -18,7 +18,6 @@ import {
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
 import {
-  extractPOIData,
   getValidPOICategories,
   readAllPois,
   readPoiByCode,
@@ -314,10 +313,11 @@ module.exports = {
     ),
 
   async autocomplete(interaction: AutocompleteInteraction) {
+    const guild = interaction.guild;
+    if (!guild) return;
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand(false);
     const focusedOption = interaction.options.getFocused(true);
-    const db = getDb();
 
     // poi_code gets used repeatedly so let's just
     // factor this out.
@@ -373,7 +373,7 @@ module.exports = {
           return await interaction.respond([]);
         }
 
-        const result = await extractPOIData(activePOI);
+        const result = await readPoiByCode(activePOI, guild);
 
         if (!result || !result.responses) {
           return await interaction.respond([]);
@@ -397,7 +397,7 @@ module.exports = {
       if (subcommand === "remove" && focusedOption.name === "method_name") {
         const targetPOI = interaction.options.getString("poi_code", true);
 
-        const poi = await extractPOIData(targetPOI);
+        const poi = await readPoiByCode(targetPOI, guild);
 
         if (!poi) return await interaction.respond([]);
 
@@ -412,6 +412,15 @@ module.exports = {
   },
 
   async execute(interaction: ChatInputCommandInteraction) {
+    const guild = interaction.guild;
+
+    if (!guild) {
+      await interaction.reply({
+        content: `I don't know what's going on, but you're using these commands outside a server.
+        This normally should not happen, so congrats on the rare error.`,
+      });
+      return;
+    }
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand();
 
@@ -511,15 +520,18 @@ module.exports = {
     }
 
     if (group === "responses") {
+      const poiCode = interaction.options.getString("poi_code");
+      if (!poiCode) return;
+      const poi = await readPoiByCode(poiCode, guild);
+
       switch (subcommand) {
         case "modify": {
-          const poiCode = interaction.options.getString("poi_code");
           const action = interaction.options.getString("action");
           const responseCode = interaction.options.getString("response_data");
           if (typeof responseCode !== "string" || !poiCode || !action) return;
           let message: string;
 
-          const targetPOI = await readPoiByCode(poiCode);
+          const targetPOI = await readPoiByCode(poiCode, guild);
 
           if (targetPOI !== undefined) {
             await targetPOI.modifyResponse(action, responseCode);
@@ -536,22 +548,16 @@ module.exports = {
           break;
         }
         case "view":
-          const poiCode = interaction.options.getString("poi_code");
-
-          if (!poiCode) return;
-
-          const poi = await extractPOIData(poiCode);
-
           // TODO: make an embed and reply it.
           // I just want to work on this in another
           // branch. :p
+          const embed = new EmbedBuilder();
           break;
       }
       return;
     }
 
     if (group === "methods") {
-      // TODO: Add methods viewer.
       switch (subcommand) {
         case "add": {
           const targetPOI = interaction.options.getString("poi_code", true);
@@ -562,7 +568,7 @@ module.exports = {
           );
           let message: string;
 
-          const poi = await extractPOIData(targetPOI);
+          const poi = await readPoiByCode(targetPOI, guild);
 
           if (poi) {
             if (!poi.methods[methodName]) {
@@ -591,7 +597,7 @@ module.exports = {
           const methodName = interaction.options.getString("method_name", true);
           let message: string;
 
-          const poi = await extractPOIData(targetPOI);
+          const poi = await readPoiByCode(targetPOI, guild);
 
           if (poi) {
             if (!poi.methods[methodName]) {
@@ -614,6 +620,9 @@ module.exports = {
           });
           break;
         }
+        case "view":
+          // TODO: Add methods viewer.
+          break;
       }
     }
 
@@ -628,7 +637,7 @@ module.exports = {
             });
             return;
           }
-          const poi = await extractPOIData(targetPOI);
+          const poi = await readPoiByCode(targetPOI, guild);
           if (!poi) {
             await interaction.reply({
               content: `**Error:** Could not find a POI with code **${targetPOI}**.`,
@@ -637,7 +646,7 @@ module.exports = {
             return;
           }
 
-          const aliasList = poi.aliases.map((a) => `- ${a}`).join("\n");
+          const aliasList = poi.aliases.map((a: string) => `- ${a}`).join("\n");
 
           const aliasEmbed = new EmbedBuilder()
             .setColor("Yellow")
@@ -666,7 +675,7 @@ module.exports = {
             return;
           }
 
-          const poi = await readPoiByCode(targetPOI);
+          const poi = await readPoiByCode(targetPOI, guild);
 
           if (!poi) {
             await interaction.reply({
@@ -695,7 +704,7 @@ module.exports = {
 
     if (group === "state") {
       const targetPOI = interaction.options.getString("poi_code", true);
-      const poi = await extractPOIData(targetPOI);
+      const poi = await readPoiByCode(targetPOI, guild);
       if (!poi) {
         await interaction.reply({
           content: `ERROR: A POI with the code **${targetPOI}** could not be found.`,
