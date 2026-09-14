@@ -32,7 +32,8 @@ export interface RespondScriptActionDict<T> extends BaseActionDict<T> {
   IdentifierOperation?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode, arg2: IterationNode) => T;
   RightHandSide?: (this: NonterminalNode, arg0: NonterminalNode) => T;
   Operand?: (this: NonterminalNode, arg0: TerminalNode) => T;
-  RollDeclaration?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode, arg3: IterationNode, arg4: TerminalNode, arg5: IterationNode, arg6: TerminalNode, arg7: IterationNode, arg8: IterationNode, arg9: IterationNode, arg10: TerminalNode) => T;
+  RollDeclaration?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode, arg3: IterationNode, arg4: TerminalNode, arg5: IterationNode, arg6: TerminalNode, arg7: IterationNode, arg8: TerminalNode) => T;
+  RollOutcome?: (this: NonterminalNode, arg0: IterationNode, arg1: NonterminalNode, arg2: IterationNode) => T;
   FlavorVariant?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: IterationNode, arg3: IterationNode, arg4: TerminalNode) => T;
   RollSucceed?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode) => T;
   RollFail?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode) => T;

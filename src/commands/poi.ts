@@ -337,9 +337,11 @@ module.exports = {
 
         const query = focusedOption.value.toString().toLowerCase();
 
-        const choices = interaction.guild.channels.cache
+        const channels = await interaction.guild.channels.fetch();
+
+        const choices = channels
           .filter((channel) => {
-            if (channel.isThread()) return false;
+            if (!channel || channel.isThread()) return false;
 
             if (channel.type !== ChannelType.GuildText || !channel.parentId)
               return false;
@@ -354,11 +356,12 @@ module.exports = {
           })
           .first(25)
           .map((channel) => ({
-            name: `#${channel.name}`.slice(0, 100),
-            value: channel.id,
+            name: `#${channel!.name}`.slice(0, 100),
+            value: channel!.id,
           }));
 
         await interaction.respond(choices);
+        return;
       }
     }
 
@@ -548,6 +551,7 @@ module.exports = {
     }
 
     if (group === "methods") {
+      // TODO: Add methods viewer.
       switch (subcommand) {
         case "add": {
           const targetPOI = interaction.options.getString("poi_code", true);
@@ -639,7 +643,7 @@ module.exports = {
             .setColor("Yellow")
             .setTitle(`Aliases for POI \`${targetPOI}\``)
             .setDescription(
-              `This POI, **${poi.name}**, is found in <@${poi.channel}>.
+              `This POI, **${poi.name}**, is found in <#${poi.channel}>.
               **Aliases**
               ${aliasList}`,
             );
@@ -730,7 +734,7 @@ module.exports = {
     switch (subcommand) {
       case "create": {
         const rawState = interaction.options.getString("state") ?? "";
-        const rawActions = interaction.options.getString("poi_actions") ?? "";
+        const rawActions = interaction.options.getString("actions") ?? "";
         const { canonicalActions, aliasMap } = parseActionGroups(rawActions);
 
         const poiDetails: TruePOIConstructor = {
@@ -755,7 +759,7 @@ module.exports = {
 
         const db = getDb();
         const insertStmt = db.prepare(
-          `INSERT INTO poi (code, channel, category, "group", data) VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO poi (code, channel, category, itemGroup, data) VALUES (?, ?, ?, ?, ?)`,
         );
         insertStmt.run(
           poi.code,

@@ -3,6 +3,10 @@ import grammar, { StateScriptSemantics } from "./stateDeclaration.ohm-bundle";
 export const stateSemantics: StateScriptSemantics = grammar.createSemantics();
 
 stateSemantics.addOperation("toStateObject", {
+  _iter(...children) {
+    return children.map((c) => c.toStateObject());
+  },
+
   StateList(assignmentNode) {
     const assignments = assignmentNode.asIteration().toStateObject();
     return Object.assign({}, ...assignments);

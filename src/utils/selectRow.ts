@@ -20,9 +20,9 @@ export function selectRow<T>(
   const safeTable = table.replace(/[^a-zA-Z0-9_]/g, "");
   const safeColumn = columnName.replace(/[^a-zA-Z0-9_]/g, "");
 
-  const query = `SELECT * FROM ${safeTable} WHERE ${safeColumn} = ? LIMIT 1`;
-
-  const row = db.prepare(query).get(safeValue);
+  const row = db
+    .prepare(/*sql*/ `SELECT * FROM ? WHERE ? = ? LIMIT 1`)
+    .get(safeTable, safeColumn, safeValue);
 
   return row;
 }

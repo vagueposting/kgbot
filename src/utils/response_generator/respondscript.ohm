@@ -35,7 +35,8 @@ RespondScript {
   RightHandSide = Identifier | NumberLiteral
   Operand = "+" | "-" | "*" | "/"
   
-  RollDeclaration = "{{@" NumberLiteral "|" listOf<Approach, ",">? "|" listOf<Skill, ",">? "}}" (FlavorVariant? RollSucceed RollFail?)* "{{/@}}"
+  RollDeclaration = "{{@" NumberLiteral "|" listOf<Approach, ",">? "|" listOf<Skill, ",">? "}}" RollOutcome* "{{/@}}"
+  RollOutcome = (FlavorVariant? RollSucceed RollFail?)
   
   FlavorVariant = "{{>" Approach? "|"? Skill? "}}" // you can get an approach or a skill, or both!
   RollSucceed = "{{=succeed}}" Statement*

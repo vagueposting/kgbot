@@ -14,11 +14,14 @@
   "author": "vagueposting",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npx tsc",
+    "build:ohm": "npx ohm generateBundles -t 'src/utils/response_generator/*.ohm'",
+    "copy:assets": "cpy \"src/utils/response_generator/*.js\" dist/utils/response_generator",
+    "build": "npm run build:ohm && npx tsc && npm run copy:assets",
     "refresh": "bash ./refresh.sh"
   },
   "dependencies": {
-    "better-sqlite3": "^11.3.0"
+    "better-sqlite3": "^11.3.0",
+    "cpy-cli": "^7.0.0"
   },
   "devDependencies": {
     "@ohm-js/cli": "^2.0.1",

@@ -13,6 +13,12 @@ export type ScriptNode =
 
 export const semantics: RespondScriptSemantics = grammar.createSemantics();
 
+export type RollOutcomeData = {
+  flavor?: string;
+  successText: string;
+  failureText?: string;
+};
+
 semantics.addOperation("toPOIResponse", {
   Program(stateDecls, defaultDisplay, statements) {
     const calledState = stateDecls.children.map((decl) => decl.toPOIResponse());
@@ -101,20 +107,43 @@ semantics.addOperation("toPOIResponse", {
     _pipe2,
     skillsNode,
     _close,
-    succeedNode,
-    failNode,
+    outcomesNode,
     _end,
   ) {
     const approaches = approachesNode.asIteration().toPOIResponse();
     const skills = skillsNode.asIteration().toPOIResponse();
 
+    // outcomesNode is an IterationNode of RollOutcome matches
+    const outcomes: RollOutcomeData[] = outcomesNode.children.map((child) =>
+      child.toPOIResponse(),
+    );
+
     return {
       type: "roll",
-      dc: dcNode.toPOIResponse(),
+      dc: Number(dcNode.sourceString),
       approaches: approaches.flat(),
       skills: skills.flat(),
-      successText: succeedNode.toPOIResponse(),
-      failureText: failNode.toPOIResponse(),
+      outcomes,
+    };
+  },
+
+  RollOutcome(flavorNode, succeedNode, failNode) {
+    const flavor =
+      flavorNode.children.length > 0
+        ? flavorNode.children[0].toPOIResponse()
+        : undefined;
+
+    const successText = succeedNode.toPOIResponse();
+
+    const failureText =
+      failNode.children.length > 0
+        ? failNode.children[0].toPOIResponse()
+        : undefined;
+
+    return {
+      flavor,
+      successText,
+      failureText,
     };
   },
 
@@ -124,5 +153,9 @@ semantics.addOperation("toPOIResponse", {
 
   RollFail(_open, statements) {
     return statements.children.map((s) => s.toPOIResponse()).join("");
+  },
+
+  FlavorVariant(_open, approachNode, _pipe, skillNode, _close) {
+    return this.sourceString;
   },
 });
