@@ -6,7 +6,7 @@ import { parseResponseScript } from "../utils/parseResponse";
 import { parseStateScript } from "../utils/parseState";
 import { Approaches } from "./approaches";
 import { SkillTags } from "./skilltags";
-import { CommandInteraction, Guild } from "discord.js";
+import { Guild } from "discord.js";
 
 export interface POIRow {
   id: number;

@@ -136,8 +136,6 @@ module.exports = {
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand();
 
-    // TODO: write runtime code for all the commands defined above.
-
     if (group === "channels") {
       const db = getDb();
       switch (subcommand) {

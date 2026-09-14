@@ -199,7 +199,7 @@ module.exports = {
         )
         .addSubcommand((subcommand) =>
           subcommand
-            .setName("remove") // TODO: add exec and autocomplete
+            .setName("remove")
             .setDescription("GM command. Removes a method from a POI.")
             .addStringOption((option) =>
               option
@@ -522,7 +522,9 @@ module.exports = {
     if (group === "responses") {
       const poiCode = interaction.options.getString("poi_code");
       if (!poiCode) return;
+      const action = interaction.options.getString("action");
       const poi = await readPoiByCode(poiCode, guild);
+      if (!poi || !action || !poi.responses[action]) return;
 
       switch (subcommand) {
         case "modify": {
@@ -547,12 +549,74 @@ module.exports = {
 
           break;
         }
-        case "view":
-          // TODO: make an embed and reply it.
-          // I just want to work on this in another
-          // branch. :p
-          const embed = new EmbedBuilder();
+        case "view": {
+          if (!poi) return;
+
+          const targetResponse = poi.responses[action];
+
+          if (!targetResponse) {
+            await interaction.reply({
+              content: `**Error:** Action \`${action}\` does not exist on POI \`${poiCode}\`.`,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
+
+          const { base, checks, methodCalls, script } = targetResponse;
+
+          const formattedChecks =
+            checks.length > 0
+              ? checks
+                  .map((check, i) => {
+                    const dcStr = check.roll_dc
+                      ? `DC ${check.roll_dc}`
+                      : "No DC";
+                    const approaches = check.approach?.length
+                      ? check.approach.join(", ")
+                      : "Any";
+                    const skills = check.skill_tag?.length
+                      ? check.skill_tag.join(", ")
+                      : "None";
+
+                    const successBlock = check.success
+                      ? `\n- **Success:** ${check.success}`
+                      : "";
+                    const failureBlock = check.failure
+                      ? `\n- **Failure:** ${check.failure}`
+                      : "";
+
+                    return `**Check #${i + 1}** [${dcStr} | **Approaches:** ${approaches} | **Skills:** ${skills}]${successBlock}${failureBlock}`;
+                  })
+                  .join("\n\n")
+              : "No stat checks required.";
+
+          const formattedMethods =
+            methodCalls.length > 0
+              ? methodCalls.map((m) => `\`${m}()\``).join(", ")
+              : "None";
+
+          const codeBlock = script
+            ? `\`\`\`\n${script}\n\`\`\``
+            : "`No source script available.`";
+
+          const description = [
+            `**Base Response**\n${base}`,
+            `\n**Checks**\n${formattedChecks}`,
+            `\n**Methods Called**\n${formattedMethods}`,
+            `\n**Source Script**\n${codeBlock}`,
+          ].join("\n");
+
+          const embed = new EmbedBuilder()
+            .setTitle(`Response Data: \`${poiCode}\` → \`${action}\``)
+            .setColor("Yellow")
+            .setDescription(description);
+
+          await interaction.reply({
+            embeds: [embed],
+            flags: MessageFlags.Ephemeral,
+          });
           break;
+        }
       }
       return;
     }
