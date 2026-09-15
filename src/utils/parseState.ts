@@ -11,3 +11,12 @@ export function parseStateScript(input: string): POIState {
   }
   return stateSemantics(match).toStateObject() as POIState;
 }
+
+export function isStateEqual(a: POIState, b: POIState): boolean {
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) return false;
+
+  return keysA.every((key) => a[key] === b[key]);
+}

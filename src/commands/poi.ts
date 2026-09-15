@@ -6,6 +6,7 @@ import {
   EmbedBuilder,
   ChannelType,
   InteractionCallback,
+  NewsChannel,
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
 import {
@@ -27,7 +28,8 @@ import { fetchPOIData } from "../utils/autocomplete/fetchPOIData";
 import { semantics } from "../utils/response_generator/respondscriptDefs";
 import { parseResponseScript } from "../utils/parseResponse";
 import { parseMethodScript } from "../utils/parseMethod";
-import { parseStateScript } from "../utils/parseState";
+import { isStateEqual, parseStateScript } from "../utils/parseState";
+import { defaultReplyStyle } from "../utils/defaultReplyStyle";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -80,6 +82,13 @@ module.exports = {
             .setDescription(
               "Will this POI have its own activity switch? False by default.",
             ),
+        )
+        .addBooleanOption((option) =>
+          option
+            .setName("public")
+            .setDescription(
+              "Set to true to show this message to everyone in the channel. (False by default.)",
+            ),
         ),
     )
     .addSubcommandGroup((group) =>
@@ -107,6 +116,13 @@ module.exports = {
                 )
                 .setAutocomplete(true)
                 .setRequired(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
             ),
         ),
     )
@@ -141,6 +157,13 @@ module.exports = {
                   "RespondScript definition for the response. Check RespondScript documentation for further details.",
                 )
                 .setRequired(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
             ),
         )
         .addSubcommand((subcommand) =>
@@ -162,6 +185,13 @@ module.exports = {
                 .setDescription("Action in the POI that you want to view.")
                 .setAutocomplete(true)
                 .setRequired(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
             ),
         ),
     )
@@ -195,6 +225,13 @@ module.exports = {
                   "MethodScript that shows what it does.See documentation.",
                 )
                 .setRequired(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (Default: False)",
+                ),
             ),
         )
         .addSubcommand((subcommand) =>
@@ -215,6 +252,13 @@ module.exports = {
                 .setName("method_name")
                 .setDescription("Name of the method you want to remove.")
                 .setRequired(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (Default: False)",
+                ),
             ),
         ),
     )
@@ -234,6 +278,13 @@ module.exports = {
                 )
                 .setRequired(true)
                 .setAutocomplete(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
             ),
         )
         .addSubcommand((subcommand) =>
@@ -255,6 +306,13 @@ module.exports = {
               option
                 .setName("new_aliases")
                 .setDescription("The new list of aliases."),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
             ),
         ),
     )
@@ -274,6 +332,13 @@ module.exports = {
                 )
                 .setRequired(true)
                 .setAutocomplete(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
             ),
         )
         .addSubcommand((subcommand) =>
@@ -292,6 +357,13 @@ module.exports = {
                 .setName("state_list")
                 .setDescription("The assignment for all item states.")
                 .setRequired(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
             ),
         )
         .addSubcommand((subcommand) =>
@@ -308,6 +380,13 @@ module.exports = {
                 )
                 .setRequired(true)
                 .setAutocomplete(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
             ),
         ),
     ),
@@ -508,9 +587,8 @@ module.exports = {
             message = `A POI with the code ${target} does not exist.`;
           }
 
-          await interaction.reply({
+          await defaultReplyStyle(interaction, {
             content: message,
-            flags: MessageFlags.Ephemeral,
           });
           break;
         default:
@@ -542,9 +620,8 @@ module.exports = {
             message = `POI **${poiCode}** does not exist. Maybe there's a typo?`;
           }
 
-          await interaction.reply({
+          await defaultReplyStyle(interaction, {
             content: message,
-            flags: MessageFlags.Ephemeral,
           });
 
           break;
@@ -611,9 +688,8 @@ module.exports = {
             .setColor("Yellow")
             .setDescription(description);
 
-          await interaction.reply({
+          await defaultReplyStyle(interaction, {
             embeds: [embed],
-            flags: MessageFlags.Ephemeral,
           });
           break;
         }
@@ -654,6 +730,10 @@ module.exports = {
             flags: MessageFlags.Ephemeral,
           });
 
+          await defaultReplyStyle(interaction, {
+            content: message,
+          });
+
           break;
         }
         case "remove": {
@@ -678,9 +758,8 @@ module.exports = {
             message = `Could not remove  \`${methodName}\` under POI **${targetPOI}** Reason: ${targetPOI} does not exist.`;
           }
 
-          await interaction.reply({
+          await defaultReplyStyle(interaction, {
             content: message,
-            flags: MessageFlags.Ephemeral,
           });
           break;
         }
@@ -721,7 +800,7 @@ module.exports = {
               ${aliasList}`,
             );
 
-          await interaction.reply({
+          await defaultReplyStyle(interaction, {
             embeds: [aliasEmbed],
           });
           break;
@@ -757,9 +836,8 @@ module.exports = {
               "\n***Note:** All aliases have been removed. For accessibility, having at least one alias is recommended.*";
           }
 
-          await interaction.reply({
+          await defaultReplyStyle(interaction, {
             content: `Alias override on **${poi.name}** (\`${targetPOI}\`) complete.${warningNote}`,
-            flags: MessageFlags.Ephemeral,
           });
           break;
         }
@@ -788,19 +866,54 @@ module.exports = {
             .setTitle(`State for POI ${targetPOI}`)
             .setDescription(stateString);
 
-          await interaction.reply({
+          await defaultReplyStyle(interaction, {
             embeds: [stateEmbed],
-            flags: MessageFlags.Ephemeral,
           });
           break;
         }
-        case "set":
+        case "set": {
           const newState = interaction.options.getString("state_list", true);
-          poi.setState(newState);
+
+          const newParsedState = parseStateScript(newState);
+          const embed = new EmbedBuilder().setTitle(
+            `Setting embed for \`${targetPOI}\`...`,
+          );
+
+          if (isStateEqual(poi.state.parsed, newParsedState)) {
+            embed
+              .setDescription(
+                "The state you inputted is the exact same as the current state. Look over your script again.",
+              )
+              .setColor("Red");
+          } else {
+            poi.setState(newState);
+
+            embed
+              .setDescription(
+                `
+              Successfully overrode the state of \`${targetPOI}\`.
+              
+              New code below:
+              \`\`\`
+              ${newState}
+              \`\`\``,
+              )
+              .setColor("Green");
+          }
+
+          await defaultReplyStyle(interaction, {
+            embeds: [embed],
+          });
           break;
-        case "reset":
+        }
+        case "reset": {
           poi.resetStateToOriginal();
+
+          await defaultReplyStyle(interaction, {
+            content: `Successfully reset state of \`${targetPOI}\``,
+          });
           break;
+        }
       }
     }
 
@@ -854,9 +967,8 @@ module.exports = {
             '\n***Note:** Without any actions, characters can only passively "view" the items. Add actions for improved interactability.*';
         }
 
-        await interaction.reply({
+        await defaultReplyStyle(interaction, {
           content: replyContent,
-          flags: MessageFlags.Ephemeral,
         });
         break;
       }
