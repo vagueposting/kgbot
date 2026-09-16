@@ -260,6 +260,30 @@ module.exports = {
                   "Set to true to show this message to everyone in the channel. (Default: False)",
                 ),
             ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("view")
+            .setDescription(
+              "Can be used to view all methods or one specific method on the POI.",
+            )
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription(
+                  "Code of the POI whose methods you want to view.",
+                )
+                .setAutocomplete(true)
+                .setRequired(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("method_name")
+                .setDescription(
+                  "The name of the method whose details you want to view.",
+                )
+                .setAutocomplete(true),
+            ),
         ),
     )
     .addSubcommandGroup((group) =>
@@ -745,9 +769,8 @@ module.exports = {
 
           if (poi) {
             if (!poi.methods[methodName]) {
-              await interaction.reply({
+              await defaultReplyStyle(interaction, {
                 content: `Method under ${methodName} does not exist.`,
-                flags: MessageFlags.Ephemeral,
               });
               return;
             }
@@ -763,9 +786,62 @@ module.exports = {
           });
           break;
         }
-        case "view":
-          // TODO: Add methods viewer.
+        case "view": {
+          const targetPOI = interaction.options.getString("poi_code", true);
+          const targetMethodName = interaction.options.getString("method_name");
+
+          const poi = await readPoiByCode(targetPOI, interaction.guild);
+          if (!poi) {
+            await defaultReplyStyle(interaction, {
+              content: `**Error:** POI with code \`${targetPOI}\` could not be found.`,
+            });
+            return;
+          }
+
+          const methodKeys = Object.keys(poi.methods || {});
+
+          if (!targetMethodName) {
+            const methodListString =
+              methodKeys.length > 0
+                ? methodKeys.map((m) => `- \`${m}()\``).join("\n")
+                : "No custom methods registered under this POI.";
+
+            const embed = new EmbedBuilder()
+              .setTitle(`Methods for POI \`${poi.name}\` (\`${targetPOI}\`)`)
+              .setColor("Yellow")
+              .setDescription(methodListString)
+              .setFooter({
+                text: "Pass a method_name option to inspect its script.",
+              });
+
+            await defaultReplyStyle(interaction, { embeds: [embed] });
+            return;
+          }
+
+          const methodScript = poi.methods[targetMethodName];
+
+          if (!methodScript) {
+            await defaultReplyStyle(interaction, {
+              content: `**Error:** Method \`${targetMethodName}\` does not exist on POI \`${targetPOI}\`.`,
+            });
+            return;
+          }
+
+          const codeBlock =
+            typeof methodScript === "string"
+              ? `\`\`\`javascript\n${methodScript}\n\`\`\``
+              : `\`\`\`javascript\n${methodScript.toString()}\n\`\`\``;
+
+          const embed = new EmbedBuilder()
+            .setTitle(
+              `Method: \`${targetMethodName}()\` [POI \`${targetPOI}\`]`,
+            )
+            .setColor("Yellow")
+            .setDescription(`**Source Script**\n${codeBlock}`);
+
+          await defaultReplyStyle(interaction, { embeds: [embed] });
           break;
+        }
       }
     }
 
