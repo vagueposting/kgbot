@@ -132,6 +132,35 @@ module.exports = {
         .setDescription("Manage POI response actions.")
         .addSubcommand((subcommand) =>
           subcommand
+            .setName("edit_alias")
+            .setDescription(
+              "Override the response actions and their aliases for a POI.",
+            )
+            .addStringOption((option) =>
+              option
+                .setName("poi_code")
+                .setDescription("5-character POI code.")
+                .setAutocomplete(true)
+                .setRequired(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName("actions")
+                .setDescription(
+                  "New action/alias definitions, e.g. (look, inspect), examine, (touch, feel)",
+                )
+                .setRequired(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
+            ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
             .setName("modify")
             .setDescription("GM command. Edit a response on a PoI")
             .addStringOption((option) =>
@@ -283,6 +312,13 @@ module.exports = {
                   "The name of the method whose details you want to view.",
                 )
                 .setAutocomplete(true),
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (Default: False)",
+                ),
             ),
         ),
     )
@@ -717,6 +753,40 @@ module.exports = {
           });
           break;
         }
+        case "edit_alias": {
+          const rawActions = interaction.options.getString("actions", true);
+          const targetPOI = await readPoiByCode(poiCode, guild);
+
+          if (!targetPOI) {
+            await interaction.reply({
+              content: `**Error:** POI with code \`${poiCode}\` does not exist.`,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
+
+          targetPOI?.updateActionAliases(rawActions);
+
+          const activeTargets = new Set(
+            Object.values(targetPOI?.actionAliases),
+          );
+          const unreachableActions = Object.keys(targetPOI.responses).filter(
+            (actionKey) => !activeTargets.has(actionKey),
+          );
+
+          let warningMessage = "";
+          if (unreachableActions.length > 0) {
+            const formattedList = unreachableActions
+              .map((a) => `\`${a}\``)
+              .join(", ");
+            warningMessage = `\n⚠️ **Warning:** This update causes **${unreachableActions.length}** response(s) to become unreachable: ${formattedList}.`;
+          }
+
+          await defaultReplyStyle(interaction, {
+            content: `Successfully updated response aliases for **${targetPOI.name}** (\`${poiCode}\`).${warningMessage}`,
+          });
+          break;
+        }
       }
       return;
     }
@@ -735,24 +805,16 @@ module.exports = {
           const poi = await readPoiByCode(targetPOI, guild);
 
           if (poi) {
-            if (!poi.methods[methodName]) {
-              await interaction.reply({
-                content: `Method under ${methodName} does not exist.`,
-                flags: MessageFlags.Ephemeral,
-              });
-              return;
-            }
+            const isOverride = Boolean(poi.methods[methodName]);
 
             poi.registerMethod(methodName, methodScript);
-            message = `Succcessfully registered method \`${methodName}\` under POI **${targetPOI}**`;
+
+            message = isOverride
+              ? `Overrode the method under \`${methodName}\``
+              : `Successfully registered method \`${methodName}\` under POI **${targetPOI}**`;
           } else {
             message = `Could not register \`${methodName}\` under POI **${targetPOI}** Reason: ${targetPOI} does not exist.`;
           }
-
-          await interaction.reply({
-            content: message,
-            flags: MessageFlags.Ephemeral,
-          });
 
           await defaultReplyStyle(interaction, {
             content: message,
@@ -939,7 +1001,7 @@ module.exports = {
 
           const stateEmbed = new EmbedBuilder()
             .setColor("Yellow")
-            .setTitle(`State for POI ${targetPOI}`)
+            .setTitle(`State for POI \`${targetPOI}\``)
             .setDescription(stateString);
 
           await defaultReplyStyle(interaction, {

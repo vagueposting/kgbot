@@ -318,6 +318,7 @@ export class POI {
   }
 
   registerMethod(methodName: string, scriptText: string) {
+    this.removeMethod(methodName); // override if it exists.
     this.methods[methodName] = parseMethodScript(scriptText);
 
     this.methodScripts[methodName] = scriptText;
