@@ -82,15 +82,17 @@ export function parseActionGroups(input: string): ParsedActions {
   const canonicalActions: string[] = [];
   const aliasMap: Record<string, string> = {};
 
-  if (!input.trim()) return { canonicalActions, aliasMap };
+  if (!input || !input.trim()) return { canonicalActions, aliasMap };
 
-  const groupRegex = /\(([^)]+)\)|([^,]+)/g;
+  const rawGroups = input.match(/\([^)]+\)|[^,(]+/g) ?? [];
 
-  let match: RegExpExecArray | null;
+  for (let group of rawGroups) {
+    group = group.trim();
+    if (!group) continue;
 
-  while ((match = groupRegex.exec(input)) !== null) {
-    if (match[1]) {
-      const synonyms = match[1]
+    if (group.startsWith("(") && group.endsWith(")")) {
+      const inner = group.slice(1, -1);
+      const synonyms = inner
         .split(",")
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean);
@@ -103,13 +105,10 @@ export function parseActionGroups(input: string): ParsedActions {
           aliasMap[synonym] = canonical;
         }
       }
-    } else if (match[2]) {
-      // Standalone action: "sit down"
-      const item = match[2].trim().toLowerCase();
-      if (item) {
-        canonicalActions.push(item);
-        aliasMap[item] = item;
-      }
+    } else {
+      const item = group.toLowerCase();
+      canonicalActions.push(item);
+      aliasMap[item] = item;
     }
   }
 
@@ -285,18 +284,20 @@ export class POI {
   updateActionAliases(rawInput: string) {
     const { canonicalActions, aliasMap } = parseActionGroups(rawInput);
 
+    const updatedResponses: Record<string, POIResponse> = {};
+
     for (const canonical of canonicalActions) {
-      if (!this.responses[canonical]) {
-        this.responses[canonical] = new POIResponse("");
+      if (this.responses[canonical]) {
+        updatedResponses[canonical] = this.responses[canonical];
+      } else {
+        updatedResponses[canonical] = new POIResponse("");
       }
     }
-    const mergedAliases = {
-      ...this.actionAliases,
-      ...aliasMap,
-    };
+
+    this.responses = updatedResponses;
 
     const prunedAliases: Record<string, string> = {};
-    for (const [alias, targetAction] of Object.entries(mergedAliases)) {
+    for (const [alias, targetAction] of Object.entries(aliasMap)) {
       if (targetAction in this.responses) {
         prunedAliases[alias] = targetAction;
       }

@@ -148,8 +148,7 @@ module.exports = {
                 .setName("actions")
                 .setDescription(
                   "New action/alias definitions, e.g. (look, inspect), examine, (touch, feel)",
-                )
-                .setRequired(true),
+                ),
             )
             .addBooleanOption((option) =>
               option
@@ -660,38 +659,74 @@ module.exports = {
     if (group === "responses") {
       const poiCode = interaction.options.getString("poi_code");
       if (!poiCode) return;
-      const action = interaction.options.getString("action");
-      const poi = await readPoiByCode(poiCode, guild);
-      if (!poi || !action || !poi.responses[action]) return;
 
       switch (subcommand) {
+        case "edit_alias": {
+          const rawActions = interaction.options.getString("actions", true);
+          const targetPOI = await readPoiByCode(poiCode, guild);
+
+          if (!targetPOI) {
+            await interaction.reply({
+              content: `**Error:** POI with code \`${poiCode}\` does not exist.`,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
+
+          targetPOI.updateActionAliases(rawActions);
+
+          const activeTargets = new Set(Object.values(targetPOI.actionAliases));
+          const unreachableActions = Object.keys(targetPOI.responses).filter(
+            (actionKey) => !activeTargets.has(actionKey),
+          );
+
+          let warningMessage = "";
+          if (unreachableActions.length > 0) {
+            const formattedList = unreachableActions
+              .map((a) => `\`${a}\``)
+              .join(", ");
+            warningMessage = `\n⚠️ **Warning:** This update causes **${unreachableActions.length}** response(s) to become unreachable: ${formattedList}.`;
+          }
+          await defaultReplyStyle(interaction, {
+            content: `Successfully updated response aliases for **${targetPOI.name}** (\`${poiCode}\`).${warningMessage}`,
+          });
+          break;
+        }
+
         case "modify": {
           const action = interaction.options.getString("action");
           const responseCode = interaction.options.getString("response_data");
-          if (typeof responseCode !== "string" || !poiCode || !action) return;
-          let message: string;
+          if (typeof responseCode !== "string" || !action) return;
 
           const targetPOI = await readPoiByCode(poiCode, guild);
 
-          if (targetPOI !== undefined) {
+          if (targetPOI) {
             await targetPOI.modifyResponse(action, responseCode);
-            message = `POI **${poiCode}** successfully modified!`;
+            await defaultReplyStyle(interaction, {
+              content: `POI **${poiCode}** successfully modified!`,
+            });
           } else {
-            message = `POI **${poiCode}** does not exist. Maybe there's a typo?`;
+            await interaction.reply({
+              content: `POI **${poiCode}** does not exist. Maybe there's a typo?`,
+              flags: MessageFlags.Ephemeral,
+            });
           }
-
-          await defaultReplyStyle(interaction, {
-            content: message,
-          });
-
           break;
         }
+
         case "view": {
-          if (!poi) return;
+          const action = interaction.options.getString("action");
+          const poi = await readPoiByCode(poiCode, guild);
 
-          const targetResponse = poi.responses[action];
+          if (!poi) {
+            await interaction.reply({
+              content: `**Error:** Could not find POI \`${poiCode}\`.`,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
 
-          if (!targetResponse) {
+          if (!action || !poi.responses[action]) {
             await interaction.reply({
               content: `**Error:** Action \`${action}\` does not exist on POI \`${poiCode}\`.`,
               flags: MessageFlags.Ephemeral,
@@ -699,7 +734,13 @@ module.exports = {
             return;
           }
 
+          const targetResponse = poi.responses[action];
           const { base, checks, methodCalls, script } = targetResponse;
+
+          const aliasList = Object.entries(poi.actionAliases)
+            .filter(([alias, target]) => target === action && alias !== action)
+            .map(([alias]) => alias)
+            .join(", ");
 
           const formattedChecks =
             checks.length > 0
@@ -722,7 +763,7 @@ module.exports = {
                       ? `\n- **Failure:** ${check.failure}`
                       : "";
 
-                    return `**Check #${i + 1}** [${dcStr} | **Approaches:** ${approaches} | **Skills:** ${skills}]${successBlock}${failureBlock}`;
+                    return `**Check #${i + 1}** [${dcStr} | **Approaches:** ${approaches} \vert{} **Skills:**${skills}]${successBlock}${failureBlock}`;
                   })
                   .join("\n\n")
               : "No stat checks required.";
@@ -737,6 +778,7 @@ module.exports = {
             : "`No source script available.`";
 
           const description = [
+            `**Aliases:** ${aliasList}`,
             `**Base Response**\n${base}`,
             `\n**Checks**\n${formattedChecks}`,
             `\n**Methods Called**\n${formattedMethods}`,
@@ -748,43 +790,7 @@ module.exports = {
             .setColor("Yellow")
             .setDescription(description);
 
-          await defaultReplyStyle(interaction, {
-            embeds: [embed],
-          });
-          break;
-        }
-        case "edit_alias": {
-          const rawActions = interaction.options.getString("actions", true);
-          const targetPOI = await readPoiByCode(poiCode, guild);
-
-          if (!targetPOI) {
-            await interaction.reply({
-              content: `**Error:** POI with code \`${poiCode}\` does not exist.`,
-              flags: MessageFlags.Ephemeral,
-            });
-            return;
-          }
-
-          targetPOI?.updateActionAliases(rawActions);
-
-          const activeTargets = new Set(
-            Object.values(targetPOI?.actionAliases),
-          );
-          const unreachableActions = Object.keys(targetPOI.responses).filter(
-            (actionKey) => !activeTargets.has(actionKey),
-          );
-
-          let warningMessage = "";
-          if (unreachableActions.length > 0) {
-            const formattedList = unreachableActions
-              .map((a) => `\`${a}\``)
-              .join(", ");
-            warningMessage = `\n⚠️ **Warning:** This update causes **${unreachableActions.length}** response(s) to become unreachable: ${formattedList}.`;
-          }
-
-          await defaultReplyStyle(interaction, {
-            content: `Successfully updated response aliases for **${targetPOI.name}** (\`${poiCode}\`).${warningMessage}`,
-          });
+          await defaultReplyStyle(interaction, { embeds: [embed] });
           break;
         }
       }
