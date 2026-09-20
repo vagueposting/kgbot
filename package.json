@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
+    "compromise": "^14.17.0",
     "cpy-cli": "^7.0.0"
   },
   "devDependencies": {

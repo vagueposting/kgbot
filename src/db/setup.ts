@@ -28,6 +28,11 @@ export function setupDatabase(): void {
     CREATE TABLE IF NOT EXISTS rp_categories (
       id TEXT UNIQUE NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      settingName TEXT UNIQUE NOT NULL,
+      settingData TEXT NOT NULL
+    )
   `;
 
   db.exec(createTableQuery);

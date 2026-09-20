@@ -11,6 +11,7 @@ import {
   MessageFlags,
 } from "discord.js";
 import { setupDatabase } from "./db/setup";
+import { botFeedChannels } from "./types/botFeedChannels";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -113,6 +114,21 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
         });
       }
     }
+  }
+});
+
+client.on("messageCreate", (message) => {
+  // if channel id is not in accepted channels list, return
+  const isInCheckableChannel = Object.values(botFeedChannels.data).includes(
+    message.channel.id,
+  );
+
+  if (!isInCheckableChannel) return;
+
+  // After guards, destructuring is now safe
+  const { tupperLog } = botFeedChannels.data;
+  if (message.channel.id === tupperLog) {
+    return;
   }
 });
 
