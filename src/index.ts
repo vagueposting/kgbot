@@ -13,6 +13,12 @@ import {
 import { setupDatabase } from "./db/setup";
 import { botFeedChannels } from "./types/botFeedChannels";
 import dotenv from "dotenv";
+import { readTupperLogMessages } from "./auto-gm/readTupperLogMessages";
+import { parsePlayerIntent } from "./auto-gm/parsePlayerIntent";
+import { listPOIsInChannel } from "./utils/tableReaders";
+import { POI, POIRow } from "./types/POItypes";
+import { fullPOIParser } from "./auto-gm/fullPOIParser";
+import { resolveChannel } from "./utils/resolveChannel";
 dotenv.config();
 
 export interface Command {
@@ -117,18 +123,12 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   }
 });
 
-client.on("messageCreate", (message) => {
-  // if channel id is not in accepted channels list, return
-  const isInCheckableChannel = Object.values(botFeedChannels.data).includes(
-    message.channel.id,
-  );
+client.on("messageCreate", async (message) => {
+  if (!botFeedChannels.cachedIds.has(message.channel.id)) return;
 
-  if (!isInCheckableChannel) return;
-
-  // After guards, destructuring is now safe
   const { tupperLog } = botFeedChannels.data;
   if (message.channel.id === tupperLog) {
-    return;
+    // insert orchestrator here.
   }
 });
 

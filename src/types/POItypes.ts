@@ -12,6 +12,7 @@ export interface POIRow {
   id: number;
   code: string;
   channel: string;
+  category: string;
   data: string;
 }
 
@@ -343,7 +344,11 @@ export class POI {
 
   resolveAction(inputAction: string): string {
     const cleanInput = inputAction.trim().toLowerCase();
-    return this.actionAliases[cleanInput] ?? cleanInput;
+    const resolved = this.actionAliases[cleanInput] ?? cleanInput;
+
+    if (resolved in this.responses) return resolved;
+
+    return "_";
   }
 
   evaluateResponse(actionKey: string, playerId: string) {

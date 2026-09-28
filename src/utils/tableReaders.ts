@@ -46,3 +46,16 @@ export async function validatePOICategory(id: string) {
 
   return isItThere;
 }
+
+export async function listPOIsInChannel(channelID: string): Promise<POIRow[]> {
+  const db = getDb();
+
+  const poiList = db
+    .prepare<[string], POIRow>(
+      /*sql*/ `SELECT id, code, channel, category, itemGroup, data FROM poi
+      WHERE channel = ?`,
+    )
+    .all(channelID);
+
+  return poiList;
+}

@@ -12,12 +12,13 @@ export interface ValidGameMove {
   isValid: true;
   messageText: string;
   messageID: string;
+  channelID: string;
   player: string;
 }
 
 export type GameMove = InvalidGameMove | ValidGameMove;
 
-export async function readTupperLog(
+export async function readTupperLogMessages(
   embed: Embed,
   guild: Guild,
 ): Promise<GameMove> {
@@ -56,6 +57,7 @@ export async function readTupperLog(
     isValid: true,
     messageText,
     messageID: messageIDs.message,
+    channelID: messageIDs.channel,
     player: messageIDs.user,
   };
 }

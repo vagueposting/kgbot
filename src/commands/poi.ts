@@ -5,17 +5,9 @@ import {
   MessageFlags,
   EmbedBuilder,
   ChannelType,
-  InteractionCallback,
-  NewsChannel,
 } from "discord.js";
 import { convertToArray } from "../utils/convertToArray";
-import {
-  parseActionGroups,
-  POI,
-  POIResponse,
-  POIRow,
-  TruePOIConstructor,
-} from "../types/POItypes";
+import { parseActionGroups, POI, TruePOIConstructor } from "../types/POItypes";
 import { generateRandomString } from "../utils/generateRandomString";
 import { getDb } from "../db/setup";
 import {
@@ -25,11 +17,9 @@ import {
 } from "../utils/tableReaders";
 import { paginateData } from "../utils/pagination";
 import { fetchPOIData } from "../utils/autocomplete/fetchPOIData";
-import { semantics } from "../utils/response_generator/respondscriptDefs";
-import { parseResponseScript } from "../utils/parseResponse";
-import { parseMethodScript } from "../utils/parseMethod";
 import { isStateEqual, parseStateScript } from "../utils/parseState";
 import { defaultReplyStyle } from "../utils/defaultReplyStyle";
+import { resolveChannel } from "../utils/resolveChannel";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -550,6 +540,7 @@ module.exports = {
   },
 
   async execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction) return;
     const guild = interaction.guild;
 
     if (!guild) {
@@ -566,8 +557,6 @@ module.exports = {
       switch (subcommand) {
         case "list":
           try {
-            if (!interaction.guild) return;
-
             const rawPOIData = await readAllPois(interaction.guild);
 
             if (rawPOIData.length === 0) {
@@ -589,9 +578,10 @@ module.exports = {
 
                 const description = chunk
                   .map((p) => {
-                    const parentCategory =
-                      interaction.guild?.channels.cache.get(p.channel)?.parent
-                        ?.name ?? "Unknown";
+                    const channel = interaction.guild!.channels.cache.get(
+                      p.channel,
+                    );
+                    const parentCategory = channel?.name ?? "Unknown";
 
                     const formattedActions = Object.keys(p.responses).map(
                       (canonicalKey) => {
@@ -608,14 +598,11 @@ module.exports = {
                       },
                     );
 
-                    return `### ${p.name} - \`${p.code}\`
-            <#${p.channel}> [${parentCategory}]
-            ⠀**Aliases:** 
-            ⠀⠀${(p.aliases ?? []).join(", ") || "None"}
-            ⠀**Responds to:**
-            ⠀⠀${formattedActions.join(", ") || "None"}`;
+                    return `### ${p.name} - \`${p.code}\`\n<#${p.channel}> [${parentCategory}]\n⠀**Aliases:** \n⠀⠀${(p.aliases ?? []).join(", ") || "None"}\n⠀**Responds to:**\n⠀⠀${formattedActions.join(", ") || "None"}`;
                   })
                   .join("\n");
+
+                embed.setDescription(description);
                 embed.setDescription(description);
 
                 return embed;
