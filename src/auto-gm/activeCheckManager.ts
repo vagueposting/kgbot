@@ -13,6 +13,7 @@ import {
   activeCheckSessions,
 } from "../types/ActiveCheckSession";
 import { ResponseRolls } from "../types/POItypes";
+import { timeouts } from "../types/timeouts";
 import { makeSessionKey } from "../utils/sessionKey";
 
 /**
@@ -38,7 +39,7 @@ export function startRollSession(params: {
         params.guild,
       );
     },
-    20 * 60 * 1000,
+    timeouts.get("rollForPOI") ?? 20 * 60 * 1000,
   );
 
   activeCheckSessions.set(sessionKey, {
@@ -66,7 +67,6 @@ async function transitionToRetrievalWindow(
 
   session.state = "RETRIEVABLE";
 
-  // Embed customId with both channelID and playerID
   const retrieveButton = new ButtonBuilder()
     .setCustomId(`retrieve_check_${channelID}_${playerID}`)
     .setLabel("Retrieve Roll Opportunity")
@@ -90,7 +90,6 @@ async function transitionToRetrievalWindow(
     console.error("Failed to post retrieval message:", err);
   }
 
-  // Set 18-hour hard cleanup timer
   session.retrievalTimer = setTimeout(
     () => {
       clearRollSession(channelID, playerID);
@@ -98,18 +97,17 @@ async function transitionToRetrievalWindow(
         `[ActiveCheck] Session permanently expired for ${sessionKey}`,
       );
     },
-    18 * 60 * 60 * 1000,
-  ); // 18 hours
+    timeouts.get("retrievePOI") ?? 18 * 60 * 60 * 1000,
+  );
 }
 
 /**
- * 3. Handles button interactions to reactivate a stale session.
+ * 3.andles button interactions to reactivate a stale session.
  */
 export async function handleRetrievalButton(
   interaction: ButtonInteraction,
   guild: Guild,
 ): Promise<void> {
-  // Custom ID format: "retrieve_check_CHANNELID_PLAYERID"
   const rawId = interaction.customId.replace("retrieve_check_", "");
   const [channelID, playerID] = rawId.split("_");
 
@@ -124,7 +122,6 @@ export async function handleRetrievalButton(
     return;
   }
 
-  // Guard: Ensure only the original player can reactivate
   if (interaction.user.id !== session.playerID) {
     await interaction.reply({
       content: "Only the player who triggered this check can retrieve it!",
@@ -150,7 +147,7 @@ export async function handleRetrievalButton(
 }
 
 /**
- * 4. Intercepts incoming messages to see if they belong to an ACTIVE roll session.
+ * Intercepts incoming messages to see if they belong to an ACTIVE roll session.
  */
 export function getActiveSession(
   channelID: string,
@@ -168,7 +165,7 @@ export function getActiveSession(
 }
 
 /**
- * 5. Cleans up session for a specific player in a channel and cancels all associated timers.
+ * Cleans up session for a specific player in a channel and cancels all associated timers.
  */
 export function clearRollSession(channelID: string, playerID: string): void {
   const sessionKey = makeSessionKey(channelID, playerID);

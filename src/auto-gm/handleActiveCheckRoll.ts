@@ -12,5 +12,6 @@ import { readTupperLogMessages } from "./readTupperLogMessages";
 export async function handleActiveCheckRoll(
   message: Message,
 ): Promise<boolean> {
+  // TODO: actually give this functionality.
   return true;
 }

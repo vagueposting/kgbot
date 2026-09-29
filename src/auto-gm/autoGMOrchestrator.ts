@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { fullPOIParser } from "./fullPOIParser";
 import { resolveChannel } from "../utils/resolveChannel";
 import { handleActiveCheckRoll } from "./handleActiveCheckRoll";
+import { startRollSession } from "./activeCheckManager";
 
 export async function autoGMOrchestrator(message: Message) {
   const isRollHandled = await handleActiveCheckRoll(message); // TODO: write handleActiveCheckRoll;

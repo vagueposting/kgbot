@@ -7,12 +7,8 @@ export const timeouts = {
     retrievePOI: new Timestamp(0, 18, 0, 0).compute(),
   } as Record<string, number>,
 
-  cachedTimes: new Set<number>(),
-
-  updateCache(): void {
-    this.cachedTimes = new Set(
-      Object.values(this.data).filter((id): id is number => Boolean(id)),
-    );
+  get(key: string): number | undefined {
+    return this.data[key];
   },
 
   change(
@@ -51,8 +47,6 @@ export const timeouts = {
         ...timeouts.data,
         ...parsed,
       };
-
-      timeouts.updateCache();
     } catch (error) {
       console.error(
         "[Settings] Failed to parse settingData from SQLITE:",
