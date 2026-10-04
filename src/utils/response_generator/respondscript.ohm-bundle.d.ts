@@ -48,6 +48,7 @@ export interface RespondScriptActionDict<T> extends BaseActionDict<T> {
   StringLiteral?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: TerminalNode) => T;
   NumberLiteral?: (this: NonterminalNode, arg0: IterationNode) => T;
   BooleanLiteral?: (this: NonterminalNode, arg0: TerminalNode) => T;
+  ModifierLiteral?: (this: NonterminalNode, arg0: IterationNode, arg1: IterationNode) => T;
   ActionType?: (this: NonterminalNode, arg0: TerminalNode) => T;
   ActionDegree?: (this: NonterminalNode, arg0: NonterminalNode) => T;
   space?: (this: NonterminalNode, arg0: TerminalNode) => T;
