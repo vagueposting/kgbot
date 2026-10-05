@@ -10,6 +10,7 @@ interface ReadyResponse {
   channelID: string;
   messageID: string;
   playerID: string;
+  actionKey: string;
   poiCode: string;
 }
 
@@ -52,6 +53,7 @@ export async function fullPOIParser(
     ...response,
     channelID: move.channelID,
     messageID: move.messageID,
+    actionKey: actionKey,
     playerID: move.player,
     poiCode: targetPOI.code,
   };

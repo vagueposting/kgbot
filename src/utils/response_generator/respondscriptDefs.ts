@@ -32,7 +32,7 @@ semantics.addOperation("toPOIResponse", {
     for (const stmt of evaluatedStatements) {
       if (stmt.type === "roll") {
         response.addCheck({
-          roll_dc: stmt.dc,
+          modifier: stmt.modifier,
           approach: stmt.approaches,
           skill_tag: stmt.skills,
           success: stmt.successText,
@@ -99,9 +99,14 @@ semantics.addOperation("toPOIResponse", {
     return `${id} ${op} ${rhs}`;
   },
 
+  ModifierLiteral(signNode, digitsNode) {
+    const sign = signNode.sourceString === "-" ? -1 : 1;
+    return sign * Number(digitsNode.sourceString);
+  },
+
   RollDeclaration(
     _open,
-    dcNode,
+    modNode,
     _pipe1,
     approachesNode,
     _pipe2,
@@ -113,16 +118,22 @@ semantics.addOperation("toPOIResponse", {
     const approaches = approachesNode.asIteration().toPOIResponse();
     const skills = skillsNode.asIteration().toPOIResponse();
 
-    // outcomesNode is an IterationNode of RollOutcome matches
     const outcomes: RollOutcomeData[] = outcomesNode.children.map((child) =>
       child.toPOIResponse(),
     );
 
+    // Extract primary outcome branch texts
+    const primaryOutcome = outcomes[0];
+    const successText = primaryOutcome?.successText ?? "";
+    const failureText = primaryOutcome?.failureText;
+
     return {
       type: "roll",
-      dc: Number(dcNode.sourceString),
+      modifier: modNode.toPOIResponse(), // Evaluated integer (e.g. 2, -1, 0)
       approaches: approaches.flat(),
       skills: skills.flat(),
+      successText,
+      failureText,
       outcomes,
     };
   },

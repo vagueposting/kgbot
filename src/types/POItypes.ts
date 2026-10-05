@@ -4,8 +4,9 @@ import { getParentId } from "../utils/getParentId";
 import { parseMethodScript } from "../utils/parseMethod";
 import { parseResponseScript } from "../utils/parseResponse";
 import { parseStateScript } from "../utils/parseState";
-import { Approaches } from "./approaches";
-import { SkillTags } from "./skilltags";
+import { RollStatus } from "./RollStatus";
+import { Approaches } from "./skillsAndApproaches";
+import { SkillTags } from "./skillsAndApproaches";
 import { Guild } from "discord.js";
 
 export interface POIRow {
@@ -61,7 +62,7 @@ export type POIState = Record<string, ValidStates>;
 export type POIMethod = (currentState: POIState) => POIState;
 
 export type ResponseRolls = {
-  roll_dc?: number;
+  modifier?: number;
   approach?: Approaches[];
   skill_tag?: SkillTags[];
   success?: string;
@@ -138,14 +139,16 @@ export class POIResponse {
 
   renderCheckOutcome(
     checkIndex: number,
-    isSuccess: boolean,
+    roll: RollStatus,
     state: POIState,
   ): string {
     const check = this.checks[checkIndex];
 
     if (!check) throw new Error(`Check index ${checkIndex} out of bounds.`);
 
-    const rawText = isSuccess ? (check.success ?? "") : (check.failure ?? "");
+    const rawText = roll.isSuccess
+      ? (check.success ?? "")
+      : (check.failure ?? "");
 
     return interpolateTemplate(rawText, state);
   }

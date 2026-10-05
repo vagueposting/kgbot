@@ -23,7 +23,7 @@
     "better-sqlite3": "^11.3.0",
     "compromise": "^14.17.0",
     "cpy-cli": "^7.0.0",
-    "string-similarity": "^4.0.4"
+    "fuzzball": "^2.2.6"
   },
   "devDependencies": {
     "@ohm-js/cli": "^2.0.1",

@@ -23,6 +23,7 @@ export function startRollSession(params: {
   channelID: string;
   playerID: string;
   poiCode: string;
+  actionKey: string;
   checkData: ResponseRolls;
   checkIndex?: number;
   guild: Guild;
@@ -46,6 +47,7 @@ export function startRollSession(params: {
     poiCode: params.poiCode,
     playerID: params.playerID,
     channelID: params.channelID,
+    actionKey: params.actionKey,
     checkData: params.checkData,
     checkIndex: params.checkIndex ?? 0,
     state: "ACTIVE",

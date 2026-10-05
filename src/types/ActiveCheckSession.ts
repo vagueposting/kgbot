@@ -6,6 +6,7 @@ export interface ActiveCheckSession {
   poiCode: string;
   playerID: string;
   channelID: string;
+  actionKey: string;
   checkData: ResponseRolls;
   checkIndex: number;
   state: CheckSessionState;

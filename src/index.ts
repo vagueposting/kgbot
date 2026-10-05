@@ -13,12 +13,9 @@ import {
 import { setupDatabase } from "./db/setup";
 import { botFeedChannels } from "./types/botFeedChannels";
 import dotenv from "dotenv";
-import { readTupperLogMessages } from "./auto-gm/readTupperLogMessages";
-import { parsePlayerIntent } from "./auto-gm/parsePlayerIntent";
-import { listPOIsInChannel } from "./utils/tableReaders";
-import { POI, POIRow } from "./types/POItypes";
-import { fullPOIParser } from "./auto-gm/fullPOIParser";
-import { resolveChannel } from "./utils/resolveChannel";
+import { handleActiveCheckRoll } from "./auto-gm/handleActiveCheckRoll";
+import { autoGMOrchestrator } from "./auto-gm/autoGMOrchestrator";
+import { handleRetrievalButton } from "./auto-gm/activeCheckManager";
 dotenv.config();
 
 export interface Command {
@@ -128,7 +125,19 @@ client.on("messageCreate", async (message) => {
 
   const { tupperLog } = botFeedChannels.data;
   if (message.channel.id === tupperLog) {
-    // insert orchestrator here.
+    const isRollHandled = await handleActiveCheckRoll(message);
+    if (isRollHandled) return;
+
+    await autoGMOrchestrator(message);
+  }
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (
+    interaction.isButton() &&
+    interaction.customId.startsWith("retrieve_check_")
+  ) {
+    await handleRetrievalButton(interaction, interaction.guild!);
   }
 });
 
