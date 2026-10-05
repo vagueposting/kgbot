@@ -733,8 +733,8 @@ module.exports = {
             checks.length > 0
               ? checks
                   .map((check, i) => {
-                    const dcStr = check.roll_dc
-                      ? `DC ${check.roll_dc}`
+                    const modStr = check.modifier
+                      ? `DC ${check.modifier}`
                       : "No DC";
                     const approaches = check.approach?.length
                       ? check.approach.join(", ")
@@ -750,7 +750,7 @@ module.exports = {
                       ? `\n- **Failure:** ${check.failure}`
                       : "";
 
-                    return `**Check #${i + 1}** [${dcStr} | **Approaches:** ${approaches} \vert{} **Skills:**${skills}]${successBlock}${failureBlock}`;
+                    return `**Check #${i + 1}** [${modStr} | **Approaches:** ${approaches} \vert{} **Skills:**${skills}]${successBlock}${failureBlock}`;
                   })
                   .join("\n\n")
               : "No stat checks required.";
