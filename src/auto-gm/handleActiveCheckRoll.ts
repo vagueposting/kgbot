@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 import { readPoiByCode } from "../utils/tableReaders";
-import { readTupperLogMessages } from "./readTupperLogMessages";
+import { readTupperLogMessage } from "./readTupperLogMessage";
 import { clearRollSession, getActiveSession } from "./activeCheckManager";
 import { parseDiceRoll } from "./parseDiceRoll";
 import { RollStatus } from "../types/RollStatus";
@@ -17,7 +17,7 @@ import { ActiveCheckSession } from "../types/ActiveCheckSession";
 export async function handleActiveCheckRoll(
   message: Message,
 ): Promise<boolean> {
-  const move = await readTupperLogMessages(message.embeds[0], message.guild!);
+  const move = await readTupperLogMessage(message.embeds[0], message.guild!);
   if (!move.isValid) return false;
 
   const session = getActiveSession(move.channelID, move.player);

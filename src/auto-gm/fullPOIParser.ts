@@ -1,4 +1,4 @@
-import { readTupperLogMessages } from "./readTupperLogMessages";
+import { readTupperLogMessage } from "./readTupperLogMessage";
 import { listPOIsInChannel } from "../utils/tableReaders";
 import { parsePlayerIntent } from "./parsePlayerIntent";
 import { POI, POIRow, ResponseRolls } from "../types/POItypes";
@@ -17,7 +17,7 @@ interface ReadyResponse {
 export async function fullPOIParser(
   message: Message,
 ): Promise<ReadyResponse | null> {
-  const move = await readTupperLogMessages(message.embeds[0], message.guild!);
+  const move = await readTupperLogMessage(message.embeds[0], message.guild!);
   if (!move.isValid) return null;
 
   const poiList = await listPOIsInChannel(move.channelID);

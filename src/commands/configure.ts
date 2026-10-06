@@ -67,7 +67,7 @@ module.exports = {
         const { tupperLog } = botFeedChannels.data;
         const feedList = new EmbedBuilder()
           .setTitle("Feed Channel List")
-          .setFields({ name: "Tupper Log", value: tupperLog });
+          .setFields({ name: "Tupper Log", value: `<#${tupperLog}>` });
         await defaultReplyStyle(interaction, {
           embeds: [feedList],
         });

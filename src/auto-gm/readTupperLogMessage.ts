@@ -18,7 +18,7 @@ export interface ValidGameMove {
 
 export type GameMove = InvalidGameMove | ValidGameMove;
 
-export async function readTupperLogMessages(
+export async function readTupperLogMessage(
   embed: Embed,
   guild: Guild,
 ): Promise<GameMove> {
