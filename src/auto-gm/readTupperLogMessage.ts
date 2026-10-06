@@ -5,7 +5,7 @@ import { resolveChannel } from "../utils/resolveChannel";
 
 export interface InvalidGameMove {
   isValid: false;
-  reason?: string; // Optional context.
+  reason?: string;
 }
 
 export interface ValidGameMove {
@@ -22,36 +22,64 @@ export async function readTupperLogMessage(
   embed: Embed,
   guild: Guild,
 ): Promise<GameMove> {
+  const invalidMove: GameMove = { isValid: false };
+
   const messageIDs = {
-    user: matchTupperboxLogID(embed.fields[0]),
-    channel: matchTupperboxLogID(embed.fields[1]),
+    user: matchTupperboxLogID(embed.fields?.[0]),
+    channel: matchTupperboxLogID(embed.fields?.[1]),
     message: embed.footer?.text.replace("Message ID ", ""),
   };
-  const messageText = embed.description ? embed.description : "";
-  let invalidMove: GameMove = {
-    isValid: false,
-  };
 
-  if (!messageIDs.channel || !messageIDs.user || !messageIDs.message)
+  if (!messageIDs.channel || !messageIDs.user || !messageIDs.message) {
+    console.log(
+      "[readTupperLog] Drop: Failed to extract IDs from Tupperbox embed",
+      messageIDs,
+    );
     return invalidMove;
+  }
+
+  const messageText = embed.description ? embed.description : "";
 
   const originalChannel = await resolveChannel(guild, messageIDs.channel);
   if (
     !originalChannel ||
     originalChannel.isDMBased() ||
     originalChannel.isVoiceBased()
-  )
+  ) {
+    console.log(
+      `[readTupperLog] Drop: Channel ${messageIDs.channel} could not be resolved or is invalid type.`,
+    );
     return invalidMove;
+  }
 
-  const categoryID = originalChannel.isThread()
-    ? originalChannel.parent?.parentId
-    : originalChannel.parentId;
+  let categoryID: string | null | undefined;
 
-  if (!categoryID) return invalidMove;
+  if (originalChannel.isThread()) {
+    const parentTextChannel =
+      originalChannel.parent ??
+      (originalChannel.parentId
+        ? await resolveChannel(guild, originalChannel.parentId)
+        : null);
+
+    categoryID = parentTextChannel?.parentId;
+  } else {
+    categoryID = originalChannel.parentId;
+  }
+
+  if (!categoryID) {
+    console.log(
+      `[readTupperLog] Drop: Missing Category ID for channel ${originalChannel.id} (Parent Category is null)`,
+    );
+    return invalidMove;
+  }
 
   const areThereItems = await validatePOICategory(categoryID);
-
-  if (!areThereItems) return invalidMove;
+  if (!areThereItems) {
+    console.log(
+      `[readTupperLog] Drop: Category ID ${categoryID} returned false from validatePOICategory`,
+    );
+    return invalidMove;
+  }
 
   return {
     isValid: true,
