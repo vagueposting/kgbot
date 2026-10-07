@@ -31,8 +31,15 @@ export class ExtendedClient extends Client {
 }
 
 setupDatabase();
+botFeedChannels.rehydrate();
 
-const client = new ExtendedClient({ intents: [GatewayIntentBits.Guilds] });
+const client = new ExtendedClient({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
 
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
@@ -121,10 +128,27 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
 });
 
 client.on("messageCreate", async (message) => {
-  if (!botFeedChannels.cachedIds.has(message.channel.id)) return;
+  // FIXME: Why do channel checks keep dropping?
+  console.log(
+    `[messageCreate] Event received in channel: ${message.channel.id}`,
+  );
+
+  if (!botFeedChannels.cachedIds.has(message.channel.id)) {
+    console.log(
+      `[messageCreate] Dropped: Channel ${message.channel.id} not in cachedIds.`,
+    );
+    return;
+  }
 
   const { tupperLog } = botFeedChannels.data;
   if (message.channel.id === tupperLog) {
+    console.log("[messageCreate] Processing TupperLog message...");
+
+    if (!message.embeds.length) {
+      console.log("[messageCreate] Dropped: Message has no embeds.");
+      return;
+    }
+
     const isRollHandled = await handleActiveCheckRoll(message);
     if (isRollHandled) return;
 

@@ -15,7 +15,8 @@ export const botFeedChannels = {
 
   change(feed: string, newChannelID: string): void {
     botFeedChannels.data[feed] = newChannelID;
-    return;
+    this.writeToData();
+    this.updateCache();
   },
 
   writeToData(): void {
@@ -23,7 +24,11 @@ export const botFeedChannels = {
     const db = getDb();
 
     db.prepare(
-      /*sql*/ `UPDATE settings SET settingData = ? WHERE name = 'botFeedChannels'`,
+      /*sql*/ `
+      INSERT INTO settings (settingName, settingData)
+      VALUES ('botFeedChannels', ?)
+      ON CONFLICT(settingName) DO UPDATE SET settingData = excluded.settingData
+    `,
     ).run(payload);
   },
 
@@ -34,22 +39,29 @@ export const botFeedChannels = {
       .prepare<
         [string],
         { settingData: string }
-      >(/*sql*/ `SELECT settingData FROM settings WHERE name = 'botFeedChannels'`)
+      >(/*sql*/ `SELECT settingData FROM settings WHERE settingName = ?`)
       .get("botFeedChannels");
 
-    if (!row || !row.settingData) return;
+    if (row?.settingData) {
+      try {
+        const parsed = JSON.parse(row.settingData);
 
-    try {
-      const parsed = JSON.parse(row.settingData);
-
-      botFeedChannels.data = {
-        ...botFeedChannels.data,
-        ...parsed,
-      };
-
-      botFeedChannels.updateCache();
-    } catch (err) {
-      console.error("[Settings] Failed to parse settingData from SQLite:", err);
+        botFeedChannels.data = {
+          ...botFeedChannels.data,
+          ...parsed,
+        };
+      } catch (err) {
+        console.error(
+          "[Settings] Failed to parse settingData from SQLite:",
+          err,
+        );
+      }
+    } else {
+      console.warn(
+        "[Settings] No 'botFeedChannels' found in DB settings. Using defaults.",
+      );
     }
+
+    botFeedChannels.updateCache();
   },
 };

@@ -21,13 +21,13 @@ export function parsePlayerIntent(
 
   for (const poi of channelPOIs) {
     for (const nameOrAlias of poi.namesAndAliases) {
-      const lowerAlias = nameOrAlias.toLowerCase();
+      const lowerAlias = nameOrAlias.toLowerCase().trim();
       wordsLexicon[lowerAlias] = "TargetPOI";
       aliasToPOIMap.set(lowerAlias, poi.code);
     }
 
     for (const act of poi.validActions) {
-      const lowerAct = act.toLowerCase();
+      const lowerAct = act.toLowerCase().trim();
       wordsLexicon[lowerAct] = "TargetAction";
       validVerbSet.add(lowerAct);
     }
@@ -38,15 +38,20 @@ export function parsePlayerIntent(
   const poiMatch = doc.match("#TargetPOI").first();
   if (!poiMatch.found) return null;
 
-  const matchedAlias = poiMatch.text().toLowerCase();
+  const matchedAlias = poiMatch.out("normal").toLowerCase().trim();
   const poiCode = aliasToPOIMap.get(matchedAlias);
 
   if (!poiCode) return null;
 
   const termList = doc.termList();
-  const poiIndex = termList.findIndex(
-    (t) => t.text.toLowerCase() === matchedAlias,
-  );
+  const poiIndex = termList.findIndex((t) => {
+    const termClean = (t.normal || t.text)
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "");
+    return termClean === matchedAlias;
+  });
+
+  if (poiIndex === -1) return null;
 
   const start = Math.max(0, poiIndex - 4);
   const end = Math.min(termList.length - 1, poiIndex + 4);
@@ -56,14 +61,18 @@ export function parsePlayerIntent(
   for (let i = start; i <= end; i++) {
     if (i === poiIndex) continue;
     const term = termList[i];
-    const normalText = term.normal || term.text.toLowerCase();
+    if (!term) continue;
 
-    if (!term.tags) return null;
+    const normalText = (term.normal || term.text)
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "");
+    const hasTag = (tag: string) => (term.tags ? term.tags.has(tag) : false);
 
-    if (term.tags.has("TargetAction") || validVerbSet.has(normalText)) {
-      foundAction = normalText;
-      break;
-    } else if (term.tags.has("Verb")) {
+    if (
+      hasTag("TargetAction") ||
+      validVerbSet.has(normalText) ||
+      hasTag("Verb")
+    ) {
       foundAction = normalText;
       break;
     }

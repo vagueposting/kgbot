@@ -65,9 +65,18 @@ module.exports = {
       // edit anything.
       if (subcommand === "list") {
         const { tupperLog } = botFeedChannels.data;
+        const fieldData = [
+          {
+            name: "Tupper Log",
+            value:
+              tupperLog !== ""
+                ? `<#${tupperLog}>`
+                : "No Tupper Log channel set yet!",
+          },
+        ];
         const feedList = new EmbedBuilder()
           .setTitle("Feed Channel List")
-          .setFields({ name: "Tupper Log", value: `<#${tupperLog}>` });
+          .setFields(fieldData);
         await defaultReplyStyle(interaction, {
           embeds: [feedList],
         });

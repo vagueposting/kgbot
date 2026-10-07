@@ -24,9 +24,11 @@ export async function readTupperLogMessage(
 ): Promise<GameMove> {
   const invalidMove: GameMove = { isValid: false };
 
+  const fields = embed.data?.fields ?? embed.fields ?? [];
+
   const messageIDs = {
-    user: matchTupperboxLogID(embed.fields?.[0]),
-    channel: matchTupperboxLogID(embed.fields?.[1]),
+    user: matchTupperboxLogID(fields[0]),
+    channel: matchTupperboxLogID(fields[1]),
     message: embed.footer?.text.replace("Message ID ", ""),
   };
 
@@ -85,7 +87,7 @@ export async function readTupperLogMessage(
     isValid: true,
     messageText,
     messageID: messageIDs.message,
-    channelID: messageIDs.channel,
+    channelID: originalChannel.id,
     player: messageIDs.user,
   };
 }

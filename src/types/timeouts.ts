@@ -24,7 +24,7 @@ export const timeouts = {
     const db = getDb();
 
     db.prepare(
-      /*sql*/ `UPDATE settings SET settingData = ? WHERE name = 'timeouts'`,
+      /*sql*/ `UPDATE settings SET settingData = ? WHERE settingName = 'timeouts'`,
     ).run(payload);
   },
 
@@ -35,7 +35,7 @@ export const timeouts = {
       .prepare<
         [string],
         { settingData: string }
-      >(/*sql*/ `SELECT settingData FROM settings WHERE name = 'timeouts'`)
+      >(/*sql*/ `SELECT settingData FROM settings WHERE settingName = 'timeouts'`)
       .get("timeouts");
 
     if (!row || !row.settingData) return;

@@ -18,10 +18,20 @@ export async function fullPOIParser(
   message: Message,
 ): Promise<ReadyResponse | null> {
   const move = await readTupperLogMessage(message.embeds[0], message.guild!);
-  if (!move.isValid) return null;
+  if (!move.isValid) {
+    console.log(
+      "[POI Parser] Drop: readTupperLogMessage returned invalid move.",
+    );
+    return null;
+  }
 
   const poiList = await listPOIsInChannel(move.channelID);
-  if (!poiList.length) return null;
+  if (!poiList.length) {
+    console.log(
+      `[POI Parser] Drop: No POIs found for target channel ID ${move.channelID}`,
+    );
+    return null;
+  }
 
   const potentialTargets: POI[] = await Promise.all(
     poiList.map((row: POIRow) => POI.fromRow(row, message.guild!)),
@@ -38,7 +48,12 @@ export async function fullPOIParser(
 
   const intent = parsePlayerIntent(move.messageText, formattedPOIsForParser);
 
-  if (!intent) return null;
+  if (!intent) {
+    console.log(
+      `[POI Parser] Drop: Could not parse intent from message: "${move.messageText}"`,
+    );
+    return null;
+  }
 
   const targetPOI = potentialTargets.find((p) => p.code === intent.poiCode);
   if (!targetPOI) return null;
