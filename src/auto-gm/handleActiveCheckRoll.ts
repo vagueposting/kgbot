@@ -26,6 +26,9 @@ export async function handleActiveCheckRoll(
   const parsedRoll = parseDiceRoll(move.messageText);
   if (!parsedRoll) return false;
 
+  // TODO: apply this in the roll reply.
+  const itemLocation = session.locationID;
+
   clearRollSession(move.channelID, move.player);
 
   const mod = session.checkData.modifier ?? 0;

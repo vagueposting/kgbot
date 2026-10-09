@@ -27,6 +27,7 @@ export async function autoGMOrchestrator(message: Message) {
 
       startRollSession({
         channelID: parsedMessage.channelID,
+        locationID: parsedMessage.locationID,
         playerID: parsedMessage.playerID,
         poiCode: parsedMessage.poiCode,
         actionKey: parsedMessage.actionKey ?? "_",

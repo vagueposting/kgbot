@@ -8,6 +8,7 @@ interface ReadyResponse {
   text: string;
   checks: ResponseRolls[];
   channelID: string;
+  locationID: string;
   messageID: string;
   playerID: string;
   actionKey: string;
@@ -67,6 +68,7 @@ export async function fullPOIParser(
   return {
     ...response,
     channelID: move.channelID,
+    locationID: move.locationID,
     messageID: move.messageID,
     actionKey: actionKey,
     playerID: move.player,

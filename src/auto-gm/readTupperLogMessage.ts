@@ -13,6 +13,7 @@ export interface ValidGameMove {
   messageText: string;
   messageID: string;
   channelID: string;
+  locationID: string;
   player: string;
 }
 
@@ -55,6 +56,7 @@ export async function readTupperLogMessage(
   }
 
   let categoryID: string | null | undefined;
+  let locationID: string | null | undefined;
 
   if (originalChannel.isThread()) {
     const parentTextChannel =
@@ -64,9 +66,13 @@ export async function readTupperLogMessage(
         : null);
 
     categoryID = parentTextChannel?.parentId;
+    locationID = originalChannel.parentId;
   } else {
     categoryID = originalChannel.parentId;
+    locationID = originalChannel.id;
   }
+
+  if (locationID === null) return invalidMove;
 
   if (!categoryID) {
     console.log(
@@ -88,6 +94,7 @@ export async function readTupperLogMessage(
     messageText,
     messageID: messageIDs.message,
     channelID: originalChannel.id,
+    locationID: locationID,
     player: messageIDs.user,
   };
 }

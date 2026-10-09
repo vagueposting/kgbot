@@ -1,4 +1,3 @@
-// services/activeCheckManager.ts
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -21,6 +20,7 @@ import { makeSessionKey } from "../utils/sessionKey";
  */
 export function startRollSession(params: {
   channelID: string;
+  locationID: string;
   playerID: string;
   poiCode: string;
   actionKey: string;
@@ -47,6 +47,7 @@ export function startRollSession(params: {
     poiCode: params.poiCode,
     playerID: params.playerID,
     channelID: params.channelID,
+    locationID: params.locationID,
     actionKey: params.actionKey,
     checkData: params.checkData,
     checkIndex: params.checkIndex ?? 0,
