@@ -345,7 +345,9 @@ export class POI {
     this.state.parsed = method(this.state.parsed);
   }
 
-  resolveAction(inputAction: string): string {
+  resolveAction(inputAction?: string | null): string {
+    if (!inputAction) return "_";
+
     const cleanInput = inputAction.trim().toLowerCase();
     const resolved = this.actionAliases[cleanInput] ?? cleanInput;
 

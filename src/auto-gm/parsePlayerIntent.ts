@@ -68,6 +68,13 @@ export function parsePlayerIntent(
       .replace(/[^\w\s]/g, "");
     const hasTag = (tag: string) => (term.tags ? term.tags.has(tag) : false);
 
+    let actionCandidate = normalText;
+    if (hasTag("Verb")) {
+      const verbDoc = nlp(normalText);
+      verbDoc.verbs().toInfinitive();
+      actionCandidate = verbDoc.text().toLowerCase().trim() || normalText;
+    }
+
     if (
       hasTag("TargetAction") ||
       validVerbSet.has(normalText) ||
