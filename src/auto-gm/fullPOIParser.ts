@@ -26,7 +26,7 @@ export async function fullPOIParser(
     return null;
   }
 
-  const poiList = await listPOIsInChannel(move.channelID);
+  const poiList = await listPOIsInChannel(move.locationID);
   if (!poiList.length) {
     console.log(
       `[POI Parser] Drop: No POIs found for target channel ID ${move.channelID}`,
