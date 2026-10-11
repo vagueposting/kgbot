@@ -57,6 +57,9 @@ module.exports = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    console.log(
+      `[Interaction Received] Created at: ${interaction.createdTimestamp}, Current time: ${Date.now()}, Age: ${Date.now() - interaction.createdTimestamp}ms`,
+    );
     const group = interaction.options.getSubcommandGroup(false);
     const subcommand = interaction.options.getSubcommand();
 
@@ -64,6 +67,12 @@ module.exports = {
       // List is the only one that doesn't
       // edit anything.
       if (subcommand === "list") {
+        const isPublic = interaction.options.getBoolean("public") ?? false;
+
+        await interaction.deferReply({
+          flags: isPublic ? undefined : MessageFlags.Ephemeral,
+        });
+
         const { tupperLog } = botFeedChannels.data;
         const fieldData = [
           {
@@ -77,9 +86,10 @@ module.exports = {
         const feedList = new EmbedBuilder()
           .setTitle("Feed Channel List")
           .setFields(fieldData);
-        await defaultReplyStyle(interaction, {
+        await interaction.editReply({
           embeds: [feedList],
         });
+
         return;
       }
 

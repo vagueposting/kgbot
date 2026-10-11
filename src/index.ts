@@ -125,10 +125,16 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       }
     }
   }
+
+  // BUTTON
+  if (interaction.isButton()) {
+    if (interaction.customId.startsWith("retrieve_check_")) {
+      await handleRetrievalButton(interaction, interaction.guild!);
+    }
+  }
 });
 
 client.on("messageCreate", async (message) => {
-  // FIXME: Why do channel checks keep dropping?
   console.log(
     `[messageCreate] Event received in channel: ${message.channel.id}`,
   );
@@ -153,15 +159,6 @@ client.on("messageCreate", async (message) => {
     if (isRollHandled) return;
 
     await autoGMOrchestrator(message);
-  }
-});
-
-client.on("interactionCreate", async (interaction) => {
-  if (
-    interaction.isButton() &&
-    interaction.customId.startsWith("retrieve_check_")
-  ) {
-    await handleRetrievalButton(interaction, interaction.guild!);
   }
 });
 
