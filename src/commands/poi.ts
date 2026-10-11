@@ -1054,6 +1054,11 @@ module.exports = {
         const rawActions = interaction.options.getString("actions") ?? "";
         const { canonicalActions, aliasMap } = parseActionGroups(rawActions);
 
+        // Add a default response if none was listed.
+        if (!canonicalActions.includes("_")) {
+          canonicalActions.push("_");
+        }
+
         const poiDetails: TruePOIConstructor = {
           name: interaction.options.getString("name", true),
           code: generateRandomString(5),
@@ -1093,7 +1098,8 @@ module.exports = {
             "\n***Note:** For player accessibility, it is heavily recommended to add aliases.*";
         }
 
-        if (poiDetails.actionsOrResponses.length === 0) {
+        // Assumes that there is only the fallback "_" action
+        if (poiDetails.actionsOrResponses.length === 1) {
           replyContent +=
             '\n***Note:** Without any actions, characters can only passively "view" the items. Add actions for improved interactability.*';
         }
