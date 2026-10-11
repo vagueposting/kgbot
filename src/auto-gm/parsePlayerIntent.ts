@@ -78,9 +78,14 @@ export function parsePlayerIntent(
     if (
       hasTag("TargetAction") ||
       validVerbSet.has(normalText) ||
+      validVerbSet.has(actionCandidate) ||
       hasTag("Verb")
     ) {
-      foundAction = normalText;
+      foundAction = validVerbSet.has(actionCandidate)
+        ? actionCandidate
+        : validVerbSet.has(normalText)
+          ? normalText
+          : actionCandidate;
       break;
     }
   }
