@@ -38,15 +38,17 @@ export function parsePlayerIntent(
   const poiMatch = doc.match("#TargetPOI").first();
   if (!poiMatch.found) return null;
 
-  const matchedAlias = poiMatch.out("normal").toLowerCase().trim();
-  const poiCode = aliasToPOIMap.get(matchedAlias);
+  let matchedAlias = poiMatch.out("normal").toLowerCase().trim();
+  matchedAlias = matchedAlias.replace(/['‘’]s$/, "").replace(/['‘’]$/, "");
 
+  const poiCode = aliasToPOIMap.get(matchedAlias);
   if (!poiCode) return null;
 
   const termList = doc.termList();
   const poiIndex = termList.findIndex((t) => {
     const termClean = (t.normal || t.text)
       .toLowerCase()
+      .replace(/['‘’]s$/, "")
       .replace(/[^\w\s]/g, "");
     return termClean === matchedAlias;
   });
