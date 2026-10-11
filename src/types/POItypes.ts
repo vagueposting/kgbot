@@ -316,6 +316,7 @@ export class POI {
       parsed: parseStateScript(rawInput),
       original: rawInput,
     };
+    this.writeToData();
   }
 
   resetStateToOriginal() {

@@ -1025,9 +1025,7 @@ module.exports = {
               Successfully overrode the state of \`${targetPOI}\`.
               
               New code below:
-              \`\`\`
-              ${newState}
-              \`\`\``,
+              \`\`\`\n${newState}\n\`\`\``,
               )
               .setColor("Green");
           }
