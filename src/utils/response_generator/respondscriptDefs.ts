@@ -20,14 +20,19 @@ export type RollOutcomeData = {
 };
 
 semantics.addOperation("toPOIResponse", {
+  _iter(...children) {
+    return children.map((c) => c.toPOIResponse());
+  },
+
   Program(stateDecls, defaultDisplay, statements) {
     const calledState = stateDecls.children.map((decl) => decl.toPOIResponse());
     const baseText = defaultDisplay.toPOIResponse();
-    const response = new POIResponse(baseText);
 
     const evaluatedStatements = statements.children.map((s) =>
       s.toPOIResponse(),
     );
+
+    const response = new POIResponse(baseText, evaluatedStatements);
 
     for (const stmt of evaluatedStatements) {
       if (stmt.type === "roll") {
@@ -44,6 +49,70 @@ semantics.addOperation("toPOIResponse", {
     }
 
     return response;
+  },
+
+  ConditionalBlock(ifClause, elseIfClause, elseClause, _end) {
+    return {
+      type: "conditional",
+      ifBranch: ifClause.toPOIResponse(),
+      elseIfBranches: elseIfClause.children.map((c) => c.toPOIResponse()),
+      elseBranch:
+        elseClause.children.length > 0
+          ? elseClause.children[0].toPOIResponse()
+          : undefined,
+    };
+  },
+
+  IfClause(_open, conditionNode, _close, statementNode) {
+    return {
+      condition: conditionNode.toPOIResponse(),
+      statements: statementNode.children.map((s) => s.toPOIResponse()),
+    };
+  },
+
+  ElseIfClause(_open, conditionNode, _close, statementsNode) {
+    return {
+      condition: conditionNode.toPOIResponse(),
+      statements: statementsNode.children.map((s) => s.toPOIResponse()),
+    };
+  },
+
+  ElseClause(_open, _close, statementsNode) {
+    return {
+      statements: statementsNode.children.map((s) => s.toPOIResponse()),
+    };
+  },
+
+  Condition(idNode, compNode, valNode) {
+    return {
+      identifier: idNode.toPOIResponse(),
+      comparator: compNode.toPOIResponse(),
+      value: valNode.toPOIResponse(),
+    };
+  },
+
+  Comparator(node) {
+    return node.sourceString;
+  },
+
+  Value(valNode) {
+    return valNode.toPOIResponse();
+  },
+
+  BooleanLiteral(node) {
+    return node.sourceString === "true";
+  },
+
+  StringLiteral(_open, chars, _close) {
+    return chars.sourceString;
+  },
+
+  NumberLiteral(_digits) {
+    return Number(this.sourceString);
+  },
+
+  Identifier(node) {
+    return node.sourceString;
   },
 
   StateDeclaration(node) {

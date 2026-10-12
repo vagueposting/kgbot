@@ -121,12 +121,89 @@ export class POIResponse {
   base: string;
   checks: ResponseRolls[];
   methodCalls: string[];
+  statements?: any[];
   script?: string;
 
-  constructor(base: string) {
+  constructor(base: string, statements: any[] = []) {
     this.base = base;
     this.checks = [];
     this.methodCalls = [];
+    this.statements = statements;
+  }
+
+  evaluateText(state: POIState) {
+    let result = "";
+    if (this.base && this.base.trim().toLowerCase() !== "ignoreme") {
+      result += this.renderBase(state);
+    }
+
+    if (!this.statements) return result;
+
+    for (const stmt of this.statements) {
+      if (stmt.type === "conditional") {
+        result += this.evaluateConditional(stmt, state);
+      } else if (typeof stmt === "string") {
+        result += stmt;
+      }
+    }
+
+    return result;
+  }
+
+  private evaluateConditional(node: any, state: POIState) {
+    if (this.checkCondition(node.ifBranch.condition, state)) {
+      return this.renderBranchStatements(node.ifBranch.statements, state);
+    }
+
+    if (node.elseIfBranches && node.elseIfBranches.length > 0) {
+      for (const elseIf of node.elseIfBranches) {
+        if (this.checkCondition(elseIf.condition, state)) {
+          return this.renderBranchStatements(elseIf.statements, state);
+        }
+      }
+    }
+
+    if (node.elseBranch) {
+      return this.renderBranchStatements(node.elseBranch.statements, state);
+    }
+
+    return "";
+  }
+
+  private checkCondition(cond: any, state: POIState): boolean {
+    const stateVal = state[cond.identifier];
+
+    const actual = stateVal;
+    const target = cond.value;
+
+    switch (cond.comparator) {
+      case "==":
+        return stateVal == cond.value;
+      case "!=":
+        return stateVal != cond.value;
+      case ">=":
+        return stateVal >= cond.value;
+      case "<=":
+        return stateVal <= cond.value;
+      case ">":
+        return stateVal > cond.value;
+      case "<":
+        return stateVal < cond.value;
+      default:
+        return false;
+    }
+  }
+
+  private renderBranchStatements(statements: any[], state: POIState): string {
+    let text = "";
+    for (const stmt of statements) {
+      if (typeof stmt === "string") {
+        text += interpolateTemplate(stmt, state);
+      } else if (stmt.type === "conditional") {
+        text += this.evaluateConditional(stmt, state);
+      }
+    }
+    return text;
   }
 
   addCheck(checkData: ResponseRolls) {
@@ -368,10 +445,10 @@ export class POI {
       player: playerId,
     };
 
-    const renderedBase = response.renderBase(this.state.parsed);
+    const renderedText = response.evaluateText(this.state.parsed);
 
     return {
-      text: renderedBase,
+      text: renderedText,
       checks: response.checks,
     };
   }
