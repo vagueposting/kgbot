@@ -34,6 +34,26 @@ semantics.addOperation("toPOIResponse", {
 
     const response = new POIResponse(baseText, evaluatedStatements);
 
+    function collectMethodCalls(stmts: any[]) {
+      for (const stmt of stmts) {
+        if (stmt.type === "methodCall") {
+          response.methodCalls.push(...stmt.keys);
+        } else if (stmt.type === "conditional") {
+          if (stmt.ifBranch?.statements)
+            collectMethodCalls(stmt.ifBranch.statements);
+          if (stmt.elseIfBranches) {
+            for (const elseIf of stmt.elseIfBranches) {
+              if (elseIf.statements) collectMethodCalls(elseIf.statements);
+            }
+          }
+          if (stmt.elseBranch?.statements)
+            collectMethodCalls(stmt.elseBranch.statements);
+        }
+      }
+    }
+
+    collectMethodCalls(evaluatedStatements);
+
     for (const stmt of evaluatedStatements) {
       if (stmt.type === "roll") {
         response.addCheck({
@@ -43,8 +63,6 @@ semantics.addOperation("toPOIResponse", {
           success: stmt.successText,
           failure: stmt.failureText,
         });
-      } else if (stmt.type === "methodCall") {
-        response.methodCalls.push(...stmt.name);
       }
     }
 

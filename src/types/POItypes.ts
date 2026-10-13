@@ -445,7 +445,17 @@ export class POI {
       player: playerId,
     };
 
+    if (response.methodCalls && response.methodCalls.length > 0) {
+      for (const methodName of response.methodCalls) {
+        if (this.methods[methodName]) {
+          this.execMethod(methodName); // Updates this.state.parsed
+        }
+      }
+    }
+
     const renderedText = response.evaluateText(this.state.parsed);
+
+    this.writeToData();
 
     return {
       text: renderedText,

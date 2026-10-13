@@ -522,7 +522,7 @@ module.exports = {
     }
 
     if (group === "methods") {
-      if (subcommand === "remove" && focusedOption.name === "method_name") {
+      if (focusedOption.name === "method_name") {
         const targetPOI = interaction.options.getString("poi_code", true);
 
         const poi = await readPoiByCode(targetPOI, guild);
@@ -858,7 +858,7 @@ module.exports = {
           if (!targetMethodName) {
             const methodListString =
               methodKeys.length > 0
-                ? methodKeys.map((m) => `- \`${m}()\``).join("\n")
+                ? methodKeys.map((m) => `- \`${m}\``).join("\n")
                 : "No custom methods registered under this POI.";
 
             const embed = new EmbedBuilder()
@@ -873,7 +873,7 @@ module.exports = {
             return;
           }
 
-          const methodScript = poi.methods[targetMethodName];
+          const methodScript = poi.methodScripts[targetMethodName];
 
           if (!methodScript) {
             await defaultReplyStyle(interaction, {
@@ -882,15 +882,10 @@ module.exports = {
             return;
           }
 
-          const codeBlock =
-            typeof methodScript === "string"
-              ? `\`\`\`javascript\n${methodScript}\n\`\`\``
-              : `\`\`\`javascript\n${methodScript.toString()}\n\`\`\``;
+          const codeBlock = `\`\`\`\n${methodScript}\n\`\`\``;
 
           const embed = new EmbedBuilder()
-            .setTitle(
-              `Method: \`${targetMethodName}()\` [POI \`${targetPOI}\`]`,
-            )
+            .setTitle(`Method: \`${targetMethodName}\` [POI \`${targetPOI}\`]`)
             .setColor("Yellow")
             .setDescription(`**Source Script**\n${codeBlock}`);
 
