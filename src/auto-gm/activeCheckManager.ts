@@ -11,7 +11,7 @@ import {
   ActiveCheckSession,
   activeCheckSessions,
 } from "../types/ActiveCheckSession";
-import { ResponseRolls } from "../types/POItypes";
+import { ResponseRoll } from "../types/POItypes";
 import { timeouts } from "../types/timeouts";
 import { makeSessionKey } from "../utils/sessionKey";
 
@@ -24,7 +24,7 @@ export function startRollSession(params: {
   playerID: string;
   poiCode: string;
   actionKey: string;
-  checkData: ResponseRolls;
+  checkData: ResponseRoll;
   checkIndex?: number;
   guild: Guild;
 }): void {

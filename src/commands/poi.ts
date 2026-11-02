@@ -19,7 +19,7 @@ import { paginateData } from "../utils/pagination";
 import { fetchPOIData } from "../utils/autocomplete/fetchPOIData";
 import { isStateEqual, parseStateScript } from "../utils/parseState";
 import { defaultReplyStyle } from "../utils/defaultReplyStyle";
-import { resolveChannel } from "../utils/resolveChannel";
+import { summarizeFlavors } from "../auto-gm/summarizeFlavors";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -736,12 +736,8 @@ module.exports = {
                     const modStr = check.modifier
                       ? `DC ${check.modifier}`
                       : "No DC";
-                    const approaches = check.approach?.length
-                      ? check.approach.join(", ")
-                      : "Any";
-                    const skills = check.skill_tag?.length
-                      ? check.skill_tag.join(", ")
-                      : "None";
+                    const approaches = summarizeFlavors(check, "approach");
+                    const skills = summarizeFlavors(check, "skill");
 
                     const successBlock = check.success
                       ? `\n- **Success:** ${check.success}`

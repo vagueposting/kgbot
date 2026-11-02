@@ -1,12 +1,12 @@
 import { readTupperLogMessage } from "./readTupperLogMessage";
 import { listPOIsInChannel } from "../utils/tableReaders";
 import { parsePlayerIntent } from "./parsePlayerIntent";
-import { POI, POIRow, ResponseRolls } from "../types/POItypes";
+import { POI, POIRow, ResponseRoll } from "../types/POItypes";
 import { Message } from "discord.js";
 
 interface ReadyResponse {
   text: string;
-  checks: ResponseRolls[];
+  checks: ResponseRoll[];
   channelID: string;
   locationID: string;
   messageID: string;

@@ -61,10 +61,14 @@ export type ValidStates = string | number | boolean;
 export type POIState = Record<string, ValidStates>;
 export type POIMethod = (currentState: POIState) => POIState;
 
-export type ResponseRolls = {
+export type FlavorVariant = {
+  approach: Approaches | null;
+  skill: SkillTags | null;
+};
+
+export type ResponseRoll = {
   modifier?: number;
-  approach?: Approaches[];
-  skill_tag?: SkillTags[];
+  flavors: FlavorVariant[];
   success?: string;
   failure?: string;
 };
@@ -119,7 +123,7 @@ export function parseActionGroups(input: string): ParsedActions {
 
 export class POIResponse {
   base: string;
-  checks: ResponseRolls[];
+  checks: ResponseRoll[];
   methodCalls: string[];
   statements?: any[];
   script?: string;
@@ -131,17 +135,17 @@ export class POIResponse {
     this.statements = statements;
   }
 
-  evaluateText(state: POIState) {
+  evaluateText(poi: POI) {
     let result = "";
     if (this.base && this.base.trim().toLowerCase() !== "ignoreme") {
-      result += this.renderBase(state);
+      result += this.renderBase(poi.state.parsed);
     }
 
     if (!this.statements) return result;
 
     for (const stmt of this.statements) {
       if (stmt.type === "conditional") {
-        result += this.evaluateConditional(stmt, state);
+        result += this.evaluateConditional(stmt, poi);
       } else if (typeof stmt === "string") {
         result += stmt;
       }
@@ -150,21 +154,22 @@ export class POIResponse {
     return result;
   }
 
-  private evaluateConditional(node: any, state: POIState) {
+  private evaluateConditional(node: any, poi: POI) {
+    const state = poi.state.parsed;
     if (this.checkCondition(node.ifBranch.condition, state)) {
-      return this.renderBranchStatements(node.ifBranch.statements, state);
+      return this.renderBranchStatements(node.ifBranch.statements, poi);
     }
 
     if (node.elseIfBranches && node.elseIfBranches.length > 0) {
       for (const elseIf of node.elseIfBranches) {
         if (this.checkCondition(elseIf.condition, state)) {
-          return this.renderBranchStatements(elseIf.statements, state);
+          return this.renderBranchStatements(elseIf.statements, poi);
         }
       }
     }
 
     if (node.elseBranch) {
-      return this.renderBranchStatements(node.elseBranch.statements, state);
+      return this.renderBranchStatements(node.elseBranch.statements, poi);
     }
 
     return "";
@@ -194,19 +199,23 @@ export class POIResponse {
     }
   }
 
-  private renderBranchStatements(statements: any[], state: POIState): string {
+  private renderBranchStatements(statements: any[], poi: POI): string {
     let text = "";
     for (const stmt of statements) {
       if (typeof stmt === "string") {
-        text += interpolateTemplate(stmt, state);
+        text += interpolateTemplate(stmt, poi.state.parsed);
+      } else if (stmt.type === "methodCall") {
+        for (const methodName of stmt.keys) {
+          poi.execMethod(methodName);
+        }
       } else if (stmt.type === "conditional") {
-        text += this.evaluateConditional(stmt, state);
+        text += this.evaluateConditional(stmt, poi);
       }
     }
     return text;
   }
 
-  addCheck(checkData: ResponseRolls) {
+  addCheck(checkData: ResponseRoll) {
     this.checks.push(checkData);
   }
 
@@ -398,6 +407,7 @@ export class POI {
 
   resetStateToOriginal() {
     this.state.parsed = parseStateScript(this.state.original ?? "");
+    this.writeToData();
   }
 
   registerMethod(methodName: string, scriptText: string) {
@@ -448,12 +458,12 @@ export class POI {
     if (response.methodCalls && response.methodCalls.length > 0) {
       for (const methodName of response.methodCalls) {
         if (this.methods[methodName]) {
-          this.execMethod(methodName); // Updates this.state.parsed
+          this.execMethod(methodName);
         }
       }
     }
 
-    const renderedText = response.evaluateText(this.state.parsed);
+    const renderedText = response.evaluateText(this);
 
     this.writeToData();
 

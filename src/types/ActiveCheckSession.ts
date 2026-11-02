@@ -1,4 +1,4 @@
-import { POI, ResponseRolls } from "./POItypes";
+import { POI, ResponseRoll } from "./POItypes";
 
 export type CheckSessionState = "ACTIVE" | "RETRIEVABLE";
 
@@ -8,7 +8,7 @@ export interface ActiveCheckSession {
   channelID: string;
   locationID: string;
   actionKey: string;
-  checkData: ResponseRolls;
+  checkData: ResponseRoll;
   checkIndex: number;
   state: CheckSessionState;
   activeTimer: NodeJS.Timeout;

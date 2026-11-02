@@ -1,12 +1,12 @@
-import { Message } from "discord.js";
+import { Message, TextChannel } from "discord.js";
 import { readPoiByCode } from "../utils/tableReaders";
 import { readTupperLogMessage } from "./readTupperLogMessage";
 import { clearRollSession, getActiveSession } from "./activeCheckManager";
 import { parseDiceRoll } from "./parseDiceRoll";
 import { RollStatus } from "../types/RollStatus";
 import { Approaches, SkillTags } from "../types/skillsAndApproaches";
-import { POIResponse } from "../types/POItypes";
-import { ResponseRolls } from "../types/POItypes";
+import { FlavorVariant, POIResponse } from "../types/POItypes";
+import { ResponseRoll } from "../types/POItypes";
 import { ParsedRoll } from "./parseDiceRoll";
 import { ActiveCheckSession } from "../types/ActiveCheckSession";
 
@@ -38,8 +38,6 @@ export async function handleActiveCheckRoll(
     degreeOfSuccess: roll,
   } as RollStatus;
 
-  const playerMods = getSkillAndApproachFromRoll(session, parsedRoll);
-
   try {
     const poi = await readPoiByCode(session.poiCode, message.guild!);
     if (!poi) return true;
@@ -56,8 +54,8 @@ export async function handleActiveCheckRoll(
 
     const checkIndex = findCheckIndex(
       responseObj,
-      playerMods.approachUsed,
-      playerMods.tagOfSkillUsed,
+      parsedRoll.approach,
+      parsedRoll.skill,
     );
 
     const outcomeNarrative = responseObj.renderCheckOutcome(
@@ -73,6 +71,16 @@ export async function handleActiveCheckRoll(
     }
 
     poi.writeToData();
+
+    const channel = (await message.guild!.channels.fetch(
+      move.channelID,
+    )) as TextChannel;
+
+    if (channel) {
+      await channel.send({
+        content: `<@${move.player}> rolled **${parsedRoll.diceResult}** (Modified: **${roll}**)\n\n${outcomeNarrative}.`,
+      });
+    }
   } catch (err) {
     console.error("Error handling roll check:", err);
   }
@@ -80,65 +88,40 @@ export async function handleActiveCheckRoll(
   return true;
 }
 
-function getSkillAndApproachFromRoll(
-  session: ActiveCheckSession,
-  parsedRoll: ParsedRoll,
+function matchesFlavor(
+  f: FlavorVariant,
+  approach?: Approaches,
+  skill?: SkillTags,
 ) {
-  const { checkData } = session;
+  const approachOk = f.approach === null || f.approach === approach;
+  const skillOk = f.skill === null || f.skill === skill;
 
-  // TODO: rewrite skill getter to fit the upcoming Player object
-  const rolledSkill = parsedRoll.skill as SkillTags | undefined;
-  const rolledApproach = parsedRoll.approach as Approaches | undefined;
-
-  const requiredSkill = Boolean(checkData.skill_tag?.length);
-  const isValidSkill =
-    !requiredSkill ||
-    (rolledSkill && checkData.skill_tag!.includes(rolledSkill));
-
-  const requiredApproach = Boolean(checkData.skill_tag?.length);
-  const isValidApproach =
-    !requiredApproach ||
-    (rolledApproach && checkData.approach!.includes(rolledApproach));
-
-  const tagOfSkillUsed: SkillTags | undefined = isValidSkill
-    ? rolledSkill
-    : undefined;
-  const approachUsed: Approaches | undefined = isValidApproach
-    ? rolledApproach
-    : undefined;
-
-  return {
-    tagOfSkillUsed,
-    approachUsed,
-  };
+  return approachOk && skillOk;
 }
 
 function findCheckIndex(
-  responseObject: POIResponse,
-  approachUsed: Approaches | undefined,
-  tagsOfSkillUsed: SkillTags | undefined,
+  response: POIResponse,
+  approach?: Approaches,
+  skill?: SkillTags,
 ): number {
-  const matchesApproach = (check: ResponseRolls) =>
-    approachUsed && check.approach?.includes(approachUsed);
-
-  const matchesSkill = (check: ResponseRolls) =>
-    tagsOfSkillUsed && check.skill_tag?.includes(tagsOfSkillUsed);
-
-  let checkIndex = responseObject.checks.findIndex(
-    (check) => matchesApproach(check) && matchesSkill(check),
+  let idx = response.checks.findIndex((r) =>
+    r.flavors.some(
+      (f) =>
+        f.approach !== null &&
+        f.skill !== null &&
+        matchesFlavor(f, approach, skill),
+    ),
   );
 
-  if (checkIndex === -1) {
-    checkIndex = responseObject.checks.findIndex(
-      (check) => matchesApproach(check) || matchesSkill(check),
-    );
-  }
+  if (idx !== -1) return idx;
 
-  if (checkIndex === -1) {
-    checkIndex = responseObject.checks.findIndex(
-      (check) => !check.approach?.length && !check.skill_tag?.length,
-    );
-  }
+  idx = response.checks.findIndex((r) =>
+    r.flavors.some((f) => matchesFlavor(f, approach, skill)),
+  );
+  if (idx !== -1) return idx;
 
-  return checkIndex;
+  const unconditional = response.checks.findIndex(
+    (r) => r.flavors.length === 0,
+  );
+  return unconditional !== -1 ? unconditional : 0;
 }

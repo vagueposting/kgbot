@@ -1,4 +1,5 @@
 import { POIResponse, POIMethod, POIState } from "../../types/POItypes";
+import { Approaches, SkillTags } from "../../types/skillsAndApproaches";
 import grammar, { RespondScriptSemantics } from "./respondscript.ohm-bundle";
 
 export type ScriptNode =
@@ -14,7 +15,10 @@ export type ScriptNode =
 export const semantics: RespondScriptSemantics = grammar.createSemantics();
 
 export type RollOutcomeData = {
-  flavor?: string;
+  flavors?: Array<{
+    approach: Approaches | null;
+    skill: SkillTags | null;
+  }>;
   successText: string;
   failureText?: string;
 };
@@ -34,35 +38,11 @@ semantics.addOperation("toPOIResponse", {
 
     const response = new POIResponse(baseText, evaluatedStatements);
 
-    function collectMethodCalls(stmts: any[]) {
-      for (const stmt of stmts) {
-        if (stmt.type === "methodCall") {
-          response.methodCalls.push(...stmt.keys);
-        } else if (stmt.type === "conditional") {
-          if (stmt.ifBranch?.statements)
-            collectMethodCalls(stmt.ifBranch.statements);
-          if (stmt.elseIfBranches) {
-            for (const elseIf of stmt.elseIfBranches) {
-              if (elseIf.statements) collectMethodCalls(elseIf.statements);
-            }
-          }
-          if (stmt.elseBranch?.statements)
-            collectMethodCalls(stmt.elseBranch.statements);
-        }
-      }
-    }
-
-    collectMethodCalls(evaluatedStatements);
-
     for (const stmt of evaluatedStatements) {
-      if (stmt.type === "roll") {
-        response.addCheck({
-          modifier: stmt.modifier,
-          approach: stmt.approaches,
-          skill_tag: stmt.skills,
-          success: stmt.successText,
-          failure: stmt.failureText,
-        });
+      if (stmt.type === "roll" && stmt.checks) {
+        for (const check of stmt.checks) {
+          response.addCheck(check);
+        }
       }
     }
 
@@ -202,44 +182,57 @@ semantics.addOperation("toPOIResponse", {
     outcomesNode,
     _end,
   ) {
-    const approaches = approachesNode.asIteration().toPOIResponse();
-    const skills = skillsNode.asIteration().toPOIResponse();
+    const defaultApproaches =
+      approachesNode.children.length > 0
+        ? approachesNode.children[0].asIteration().toPOIResponse()
+        : [];
+    const defaultSkills =
+      skillsNode.children.length > 0
+        ? skillsNode.children[0].asIteration().toPOIResponse()
+        : [];
 
     const outcomes: RollOutcomeData[] = outcomesNode.children.map((child) =>
       child.toPOIResponse(),
     );
 
-    // Extract primary outcome branch texts
-    const primaryOutcome = outcomes[0];
-    const successText = primaryOutcome?.successText ?? "";
-    const failureText = primaryOutcome?.failureText;
+    const checks = outcomes.map((o) => {
+      const flavorApproaches = o.flavors
+        ?.map((f) => f.approach)
+        .filter(Boolean) as Approaches[];
+      const flavorSkills = o.flavors
+        ?.map((f) => f.skill)
+        .filter(Boolean) as SkillTags[];
+
+      return {
+        modifier: modNode.toPOIResponse(),
+        approach:
+          flavorApproaches.length > 0 ? flavorApproaches : defaultApproaches,
+        skill_tag: flavorSkills.length > 0 ? flavorSkills : defaultSkills,
+        success: o.successText,
+        failure: o.failureText,
+        flavors: o.flavors,
+      };
+    });
 
     return {
       type: "roll",
-      modifier: modNode.toPOIResponse(), // Evaluated integer (e.g. 2, -1, 0)
-      approaches: approaches.flat(),
-      skills: skills.flat(),
-      successText,
-      failureText,
-      outcomes,
+      modifier: modNode.toPOIResponse(),
+      approaches: defaultApproaches.flat(),
+      skills: defaultSkills.flat(),
+      checks,
     };
   },
 
-  RollOutcome(flavorNode, succeedNode, failNode) {
-    const flavor =
-      flavorNode.children.length > 0
-        ? flavorNode.children[0].toPOIResponse()
-        : undefined;
-
+  RollOutcome(flavorNodes, succeedNode, failNode) {
+    const flavors = flavorNodes.children.map((c) => c.toPOIResponse());
     const successText = succeedNode.toPOIResponse();
-
     const failureText =
       failNode.children.length > 0
         ? failNode.children[0].toPOIResponse()
         : undefined;
 
     return {
-      flavor,
+      flavors: flavors.length > 0 ? flavors : undefined,
       successText,
       failureText,
     };
@@ -253,7 +246,23 @@ semantics.addOperation("toPOIResponse", {
     return statements.children.map((s) => s.toPOIResponse()).join("");
   },
 
-  FlavorVariant(_open, approachNode, _pipe, skillNode, _close) {
-    return this.sourceString;
+  FlavorVariant(
+    _open,
+    approachNode,
+    _pipe,
+    skillNode,
+    _close,
+  ): { approach: Approaches | null; skill: SkillTags | null } {
+    const approach =
+      approachNode.children.length > 0
+        ? (approachNode.sourceString.trim() as Approaches)
+        : null;
+
+    const skill =
+      skillNode.children.length > 0
+        ? (skillNode.sourceString.trim() as SkillTags)
+        : null;
+
+    return { approach, skill };
   },
 });

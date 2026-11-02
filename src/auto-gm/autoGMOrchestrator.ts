@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { fullPOIParser } from "./fullPOIParser";
 import { resolveChannel } from "../utils/resolveChannel";
 import { startRollSession } from "./activeCheckManager";
+import { summarizeFlavors } from "./summarizeFlavors";
 
 export async function autoGMOrchestrator(message: Message) {
   const parsedMessage = await fullPOIParser(message);
@@ -16,11 +17,14 @@ export async function autoGMOrchestrator(message: Message) {
     if (parsedMessage.checks && parsedMessage.checks.length > 0) {
       const check = parsedMessage.checks[0];
 
+      const approaches = summarizeFlavors(check, "approach");
+      const skills = summarizeFlavors(check, "skill");
+
       const prompt =
         `${parsedMessage.text}\n\n` +
         `🎲 **All rolls in this situation have a modifier!** (${check.modifier ?? 10})\n` +
-        `• **Approaches:** ${check.approach?.join(", ") ?? "Any"}\n` +
-        `• **Skills:** ${check.skill_tag?.join(", ") ?? "Any"}\n` +
+        `• **Approaches:** ${approaches}\n` +
+        `• **Skills:** ${skills}\n` +
         `*(Roll within 20 minutes)*`;
 
       await targetMessage.reply({ content: prompt });
