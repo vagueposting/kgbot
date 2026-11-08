@@ -17,7 +17,8 @@
     "build:ohm": "npx ohm generateBundles -t 'src/utils/response_generator/*.ohm'",
     "copy:assets": "cpy \"src/utils/response_generator/*.js\" dist/utils/response_generator",
     "build": "npm run build:ohm && npx tsc && npm run copy:assets",
-    "refresh": "bash ./refresh.sh"
+    "refresh": "bash ./refresh.sh",
+    "test": "jest"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
@@ -28,11 +29,13 @@
   "devDependencies": {
     "@ohm-js/cli": "^2.0.1",
     "@types/better-sqlite3": "^9.6.0",
+    "@types/jest": "^30.0.0",
     "@types/ssh2-sftp-client": "^9.0.6",
     "discord.js": "latest",
     "dotenv": "latest",
     "ohm-js": "^17.5.0",
     "ssh2-sftp-client": "^12.1.1",
+    "ts-jest": "^29.4.15",
     "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   },

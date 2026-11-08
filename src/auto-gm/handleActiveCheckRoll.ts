@@ -99,7 +99,7 @@ function matchesFlavor(
   return approachOk && skillOk;
 }
 
-function findCheckIndex(
+export function findCheckIndex(
   response: POIResponse,
   approach?: Approaches,
   skill?: SkillTags,

@@ -14,7 +14,7 @@ export interface ParsedRoll {
 }
 
 export function parseDiceRoll(messageText: string): ParsedRoll | null {
-  const diceRegex = /`?\s*🎲\s*(\d+)\s*`?/i;
+  const diceRegex = /`\s*🎲\s*(-?\d+)\s*`/;
   const diceMatch = messageText.match(diceRegex);
 
   if (!diceMatch) return null;
@@ -34,31 +34,17 @@ export function parseDiceRoll(messageText: string): ParsedRoll | null {
   let bestApproach: Approaches | undefined;
 
   for (const tag of tags) {
-    const skillMatch = fuzz.extract(
-      tag,
-      ALL_SKILL_TAGS as unknown as string[],
-      {
-        scorer: fuzz.ratio,
-        limit: 1,
-      },
-    )[0];
-
-    if (skillMatch && skillMatch[1] >= 75) {
-      bestSkill = skillMatch[0] as SkillTags;
+    if (!bestSkill) {
+      const [match, score] =
+        fuzz.extract(tag, ALL_SKILL_TAGS, { limit: 1 })[0] ?? [];
+      if (match && score >= 75) bestSkill = match as SkillTags;
     }
-
-    const approachMatch = fuzz.extract(
-      tag,
-      ALL_APPROACHES as unknown as string[],
-      {
-        scorer: fuzz.ratio,
-        limit: 1,
-      },
-    )[0];
-
-    if (approachMatch && approachMatch[1] >= 75) {
-      bestApproach = approachMatch[0] as Approaches;
+    if (!bestApproach) {
+      const [match, score] =
+        fuzz.extract(tag, ALL_APPROACHES, { limit: 1 })[0] ?? [];
+      if (match && score >= 75) bestApproach = match as Approaches;
     }
+    if (bestSkill && bestApproach) break;
   }
 
   return {
