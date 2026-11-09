@@ -57,4 +57,41 @@ describe("findCheckIndex", () => {
     ]);
     expect(findCheckIndex(resp, "careful", "athletics")).toBe(1);
   });
+
+  it("prefers exact pairs over wildcards", () => {
+    const resp = makeResponse([
+      {
+        modifier: 0,
+        flavors: [{ approach: "careful", skill: null }],
+        success: "wild",
+      },
+      {
+        modifier: 0,
+        flavors: [{ approach: "careful", skill: "athletics" }],
+        success: "exact",
+      },
+    ]);
+    expect(findCheckIndex(resp, "careful", "athletics")).toBe(1);
+  });
+
+  it("falls back to unconditional when nothing matches", () => {
+    const resp = makeResponse([
+      { modifier: 0, flavors: [], success: "fallback" },
+    ]);
+    expect(findCheckIndex(resp, "sneaky", "skulduggery")).toBe(0);
+  });
+
+  it("regression: does NOT cross-product flavors", () => {
+    const resp = makeResponse([
+      {
+        modifier: 0,
+        flavors: [
+          { approach: "forceful", skill: "athletics" },
+          { approach: "quick", skill: null },
+        ],
+        success: "ok",
+      },
+    ]);
+    expect(findCheckIndex(resp, "forceful", "composure")).toBe(-1);
+  });
 });
