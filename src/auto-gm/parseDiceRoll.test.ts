@@ -1,4 +1,4 @@
-import { parseDiceRoll } from "../../src/auto-gm/parseDiceRoll";
+import { parseDiceRoll } from "./parseDiceRoll";
 
 describe("parseDiceRoll", () => {
   it("extracts dice result", () => {

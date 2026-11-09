@@ -52,11 +52,12 @@ export async function handleActiveCheckRoll(
       return true;
     }
 
-    const checkIndex = findCheckIndex(
+    const matched = findCheckIndex(
       responseObj,
-      parsedRoll.approach,
-      parsedRoll.skill,
+      parsedRoll.approach ?? null,
+      parsedRoll.skill ?? null,
     );
+    const checkIndex = matched === -1 ? 0 : matched;
 
     const outcomeNarrative = responseObj.renderCheckOutcome(
       checkIndex,
@@ -88,10 +89,10 @@ export async function handleActiveCheckRoll(
   return true;
 }
 
-function matchesFlavor(
+export function matchesFlavor(
   f: FlavorVariant,
-  approach?: Approaches,
-  skill?: SkillTags,
+  approach: Approaches | null,
+  skill: SkillTags | null,
 ) {
   const approachOk = f.approach === null || f.approach === approach;
   const skillOk = f.skill === null || f.skill === skill;
@@ -101,8 +102,8 @@ function matchesFlavor(
 
 export function findCheckIndex(
   response: POIResponse,
-  approach?: Approaches,
-  skill?: SkillTags,
+  approach: Approaches | null,
+  skill: SkillTags | null,
 ): number {
   let idx = response.checks.findIndex((r) =>
     r.flavors.some(
@@ -112,7 +113,6 @@ export function findCheckIndex(
         matchesFlavor(f, approach, skill),
     ),
   );
-
   if (idx !== -1) return idx;
 
   idx = response.checks.findIndex((r) =>
@@ -120,8 +120,5 @@ export function findCheckIndex(
   );
   if (idx !== -1) return idx;
 
-  const unconditional = response.checks.findIndex(
-    (r) => r.flavors.length === 0,
-  );
-  return unconditional !== -1 ? unconditional : 0;
+  return response.checks.findIndex((r) => r.flavors.length === 0);
 }

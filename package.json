@@ -16,7 +16,7 @@
   "scripts": {
     "build:ohm": "npx ohm generateBundles -t 'src/utils/response_generator/*.ohm'",
     "copy:assets": "cpy \"src/utils/response_generator/*.js\" dist/utils/response_generator",
-    "build": "npm run build:ohm && npx tsc && npm run copy:assets",
+    "build": "npm run build:ohm && npx tsc && npm run copy:assets && rimraf \"dist/**/*.test.js\" \"dist/**/*.spec.js\" \"dist/**/__tests__\"",
     "refresh": "bash ./refresh.sh",
     "test": "jest"
   },

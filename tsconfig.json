@@ -10,11 +10,6 @@
     "rootDir": "./src",
     "types": ["jest", "node"]
   },
-  "include": [
-    "src/**/*",
-    "tools/deploy-sftp.ts",
-    "tools/wipe-commands.ts",
-    "tools/deploy-commands.ts"
-  ],
+  "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }
