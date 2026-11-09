@@ -114,6 +114,20 @@ module.exports = {
                   "Set to true to show this message to everyone in the channel. (False by default.)",
                 ),
             ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("audit")
+            .setDescription(
+              "GM command. Audit POIs to check for missing or undefined responses.",
+            )
+            .addBooleanOption((option) =>
+              option
+                .setName("public")
+                .setDescription(
+                  "Set to true to show this message to everyone in the channel. (False by default.)",
+                ),
+            ),
         ),
     )
     .addSubcommandGroup((group) =>
@@ -583,7 +597,15 @@ module.exports = {
                     );
                     const parentCategory = channel?.name ?? "Unknown";
 
-                    const formattedActions = Object.keys(p.responses).map(
+                    const responseKeys = Object.keys(p.responses || {});
+                    const isIncomplete =
+                      responseKeys.length === 0 ||
+                      (responseKeys.length === 1 && responseKeys[0] === "_");
+                    const warningBadge = isIncomplete
+                      ? " ⚠️ *Needs responses*"
+                      : "";
+
+                    const formattedActions = responseKeys.map(
                       (canonicalKey) => {
                         const synonyms = Object.entries(p.actionAliases ?? {})
                           .filter(
@@ -598,11 +620,10 @@ module.exports = {
                       },
                     );
 
-                    return `### ${p.name} - \`${p.code}\`\n<#${p.channel}> [${parentCategory}]\n⠀**Aliases:** \n⠀⠀${(p.aliases ?? []).join(", ") || "None"}\n⠀**Responds to:**\n⠀⠀${formattedActions.join(", ") || "None"}`;
+                    return `### ${p.name} - \`${p.code}\`${warningBadge}\n<#${p.channel}> [${parentCategory}]\n⠀**Aliases:** \n⠀⠀${(p.aliases ?? []).join(", ") || "None"}\n⠀**Responds to:**\n⠀⠀${formattedActions.join(", ") || "None"}`;
                   })
                   .join("\n");
 
-                embed.setDescription(description);
                 embed.setDescription(description);
 
                 return embed;
@@ -637,6 +658,48 @@ module.exports = {
             content: message,
           });
           break;
+        case "audit": {
+          const rawPOIData = await readAllPois(interaction.guild);
+
+          if (rawPOIData.length === 0) {
+            await interaction.reply({
+              content:
+                "**Error:** No points of interest found in the database.",
+              flags: MessageFlags.Ephemeral,
+            });
+            break;
+          }
+
+          const unpolishedPOIs = rawPOIData.filter((p) => {
+            const keys = Object.keys(p.responses || {});
+            return keys.length === 0 || (keys.length === 1 && keys[0] === "_");
+          });
+
+          if (unpolishedPOIs.length === 0) {
+            await defaultReplyStyle(interaction, {
+              content:
+                "✅ All Points of Interest have custom responses defined!",
+            });
+            break;
+          }
+
+          const auditList = unpolishedPOIs
+            .map((p) => `• **${p.name}** (\`${p.code}\`) in <#${p.channel}>`)
+            .join("\n");
+
+          const auditEmbed = new EmbedBuilder()
+            .setTitle("POI Response Audit Warning")
+            .setColor("Orange")
+            .setDescription(
+              `Hey... this POI doesn't have all of its responses defined. You should work on that:\n\n${auditList}`,
+            )
+            .setFooter({
+              text: `Total unpolished POIs: ${unpolishedPOIs.length}`,
+            });
+
+          await defaultReplyStyle(interaction, { embeds: [auditEmbed] });
+          break;
+        }
         default:
           break;
       }

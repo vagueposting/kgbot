@@ -16,7 +16,7 @@
   "scripts": {
     "build:ohm": "npx ohm generateBundles -t 'src/utils/response_generator/*.ohm'",
     "copy:assets": "cpy \"src/utils/response_generator/*.js\" dist/utils/response_generator",
-    "build": "npm run build:ohm && npx tsc && npm run copy:assets && rimraf \"dist/**/*.test.js\" \"dist/**/*.spec.js\" \"dist/**/__tests__\"",
+    "build": "npm run build:ohm && npx tsc && npm run copy:assets && npx del-cli \"dist/**/*.test.js\" \"dist/**/*.spec.js\" \"dist/**/__tests__\"",
     "refresh": "bash ./refresh.sh",
     "test": "jest"
   },
@@ -31,6 +31,7 @@
     "@types/better-sqlite3": "^9.6.0",
     "@types/jest": "^30.0.0",
     "@types/ssh2-sftp-client": "^9.0.6",
+    "del-cli": "^7.0.0",
     "discord.js": "latest",
     "dotenv": "latest",
     "jest": "^30.5.2",
