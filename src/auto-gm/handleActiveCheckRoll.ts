@@ -54,8 +54,8 @@ export async function handleActiveCheckRoll(
 
     const matched = findCheckIndex(
       responseObj,
-      parsedRoll.approach ?? null,
-      parsedRoll.skill ?? null,
+      parsedRoll.approach,
+      parsedRoll.skill /*  */,
     );
     const checkIndex = matched === -1 ? 0 : matched;
 
@@ -91,19 +91,19 @@ export async function handleActiveCheckRoll(
 
 export function matchesFlavor(
   f: FlavorVariant,
-  approach: Approaches | null,
-  skill: SkillTags | null,
+  approach?: Approaches,
+  skill?: SkillTags,
 ) {
-  const approachOk = f.approach === null || f.approach === approach;
-  const skillOk = f.skill === null || f.skill === skill;
+  const approachOk = f.approach == null || f.approach === approach;
+  const skillOk = f.skill == null || f.skill === skill;
 
   return approachOk && skillOk;
 }
 
 export function findCheckIndex(
   response: POIResponse,
-  approach: Approaches | null,
-  skill: SkillTags | null,
+  approach?: Approaches,
+  skill?: SkillTags,
 ): number {
   let idx = response.checks.findIndex((r) =>
     r.flavors.some(

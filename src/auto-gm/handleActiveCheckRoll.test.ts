@@ -29,7 +29,7 @@ describe("findCheckIndex", () => {
       },
     ]);
     expect(findCheckIndex(resp, "careful", "composure")).toBe(0);
-    expect(findCheckIndex(resp, "careful", null)).toBe(0);
+    expect(findCheckIndex(resp, "careful", undefined)).toBe(0);
   });
 
   it("prefers exact pairs over wildcards", () => {
