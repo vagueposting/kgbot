@@ -1,5 +1,5 @@
 RespondScript {
-  Program = StateDeclaration* Default Statement*
+  Program = Default Statement*
 
   Default = Display+
  
@@ -7,15 +7,7 @@ RespondScript {
             | ConditionalBlock
             | RollDeclaration
             | Display
-  
- // instead of assigning values, the State Declaration checks 
- // which parts of the object state are actually relevant
-  StateDeclaration = ObjectState | PlayerState
-  
-  ObjectState = "{{#" listOf<Identifier, ","> "}}"
-  PlayerState = "{{P" PlayerStuff "}}"
-  PlayerStuff = "pockets" | "thoughts" // TODO: add more. but i'll get there as i design.
- 
+
   MethodCall = "{{&" listOf<Identifier, ","> "}}"
   
   ConditionalBlock = IfClause ElseIfClause* ElseClause? "{{/?}}"

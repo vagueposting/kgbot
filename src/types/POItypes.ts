@@ -178,9 +178,6 @@ export class POIResponse {
   private checkCondition(cond: any, state: POIState): boolean {
     const stateVal = state[cond.identifier];
 
-    const actual = stateVal;
-    const target = cond.value;
-
     switch (cond.comparator) {
       case "==":
         return stateVal == cond.value;

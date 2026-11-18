@@ -28,8 +28,7 @@ semantics.addOperation("toPOIResponse", {
     return children.map((c) => c.toPOIResponse());
   },
 
-  Program(stateDecls, defaultDisplay, statements) {
-    const calledState = stateDecls.children.map((decl) => decl.toPOIResponse());
+  Program(defaultDisplay, statements) {
     const baseText = defaultDisplay.toPOIResponse();
 
     const evaluatedStatements = statements.children.map((s) =>
@@ -42,6 +41,11 @@ semantics.addOperation("toPOIResponse", {
       if (stmt.type === "roll" && stmt.checks) {
         for (const check of stmt.checks) {
           response.addCheck(check);
+        }
+      }
+      if (stmt.type === "methodCall" && stmt.keys) {
+        for (const key of stmt.keys) {
+          response.methodCalls.push(key);
         }
       }
     }
@@ -111,24 +115,6 @@ semantics.addOperation("toPOIResponse", {
 
   Identifier(node) {
     return node.sourceString;
-  },
-
-  StateDeclaration(node) {
-    return node.toPOIResponse();
-  },
-
-  ObjectState(_open, identifiersNode, _close) {
-    return {
-      type: "objectState",
-      keys: identifiersNode.asIteration().toPOIResponse(),
-    };
-  },
-
-  PlayerState(_open, stuffNode, _close) {
-    return {
-      type: "playerState",
-      target: stuffNode.sourceString,
-    };
   },
 
   MethodCall(_open, methods, _close) {

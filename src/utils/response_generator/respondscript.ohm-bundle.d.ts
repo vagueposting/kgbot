@@ -12,13 +12,9 @@ import {
 } from 'ohm-js';
 
 export interface RespondScriptActionDict<T> extends BaseActionDict<T> {
-  Program?: (this: NonterminalNode, arg0: IterationNode, arg1: NonterminalNode, arg2: IterationNode) => T;
+  Program?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode) => T;
   Default?: (this: NonterminalNode, arg0: IterationNode) => T;
   Statement?: (this: NonterminalNode, arg0: NonterminalNode) => T;
-  StateDeclaration?: (this: NonterminalNode, arg0: NonterminalNode) => T;
-  ObjectState?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode) => T;
-  PlayerState?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode) => T;
-  PlayerStuff?: (this: NonterminalNode, arg0: TerminalNode) => T;
   MethodCall?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode) => T;
   ConditionalBlock?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode, arg2: IterationNode, arg3: TerminalNode) => T;
   IfClause?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode, arg3: IterationNode) => T;
