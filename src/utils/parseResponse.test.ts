@@ -53,7 +53,7 @@ describe("parseResponseScript", () => {
   it("parses conditional blocks with if, else-if, else, and nested method calls", () => {
     const r = parseResponseScript(
       `It's a table.
-{{? TEAPOT == true}}There's a teapot on it. {{&brewTea}}
+{{? TEAPOT == true}}There's a teapot on it.{{&brewTea}}
 {{?? TEAPOTCOUNT >= 2}}Two teapots sit here.{{!?}}Somebody else already took it.{{/?}}`,
     );
 
@@ -127,6 +127,74 @@ You can add up to {{MAXCAKES - CAKES}} more.`);
     const { parsed } = poi.state;
 
     const output = r.evaluateText(poi);
-    expect(output).toContain(`It's a table with ${parsed.CAKES} cakes.`);
+    expect(output).toMatch(`It's a table with ${parsed.CAKES} cakes.`);
+    expect(output).toMatch(
+      `You can add up to ${(parsed.MAXCAKES as number) - (parsed.CAKES as number)} more.`,
+    );
+  });
+
+  it("parses a roll declaration with default approaches, skills, and outcomes", () => {
+    const r = parseResponseScript(
+      `You inspect the locked drawer.
+{{@+2|Careful,Clever|Skulduggery}}
+{{=succeed}}You pick the lock cleanly.
+{{=fail}}The pick snaps inside the keyhole.
+{{/@}}`,
+    );
+
+    expect(r.base).toBe("You inspect the locked drawer.");
+    expect(r.checks).toHaveLength(1);
+    expect(r.checks[0]).toMatchObject({
+      modifier: 2,
+      approach: ["Careful", "Clever"],
+      skill_tag: ["Skulduggery"],
+      success: "You pick the lock cleanly.",
+      failure: "The pick snaps inside the keyhole.",
+    });
+  });
+
+  it("handles negative modifiers, optional failure blocks, and flavor variants", () => {
+    const r = parseResponseScript(
+      `You try to force the heavy lid open.
+{{@-1|Forceful|Athletics}}
+{{>Quick|Skulduggery}}{{>Clever|}}
+{{=succeed}}The lid slides off with {{WEIGHT}} lbs of dust.
+{{=succeed}}You pry it open the standard way.
+{{=fail}}It doesn't budge.
+{{/@}}`,
+    );
+
+    expect(r.checks).toHaveLength(2);
+    expect(r.checks[0].success).toBe(
+      "The lid slides off with ${state.WEIGHT} lbs of dust.",
+    );
+
+    expect(r.checks[0]).toMatchObject({
+      modifier: -1,
+      approach: ["Quick", "Clever"],
+      skill_tag: ["Skulduggery"],
+      flavors: [
+        { approach: "Quick", skill: "Skulduggery" },
+        { approach: "Clever", skill: null },
+      ],
+      failure: undefined,
+    });
+
+    expect(r.checks[1]).toMatchObject({
+      modifier: -1,
+      approach: ["Forceful"],
+      skill_tag: ["Athletics"],
+      flavors: undefined,
+    });
+
+    const successText = r.renderCheckOutcome(0, { isSuccess: true } as any, {
+      WEIGHT: 15,
+    });
+    expect(successText).toMatch("15 lbs of dust.");
+
+    const failText = r.renderCheckOutcome(1, { isSuccess: false } as any, {
+      WEIGHT: 15,
+    });
+    expect(failText).toMatch("It doesn't budge.");
   });
 });

@@ -1,12 +1,12 @@
 RespondScript {
   Program = Default Statement*
 
-  Default = Display+
+  Default = #display+
  
   Statement = MethodCall
             | ConditionalBlock
             | RollDeclaration
-            | Display
+            | display
 
   MethodCall = "{{&" listOf<Identifier, ","> "}}"
   
@@ -18,18 +18,18 @@ RespondScript {
   Condition        = Identifier Comparator Value
   Comparator       = "==" | "!=" | ">=" | "<=" | ">" | "<"
   
-  EmbedState = "{{" IdentifierOperation "}}"
+  embedState = "{{" applySyntactic<IdentifierOperation> "}}"
   
   IdentifierOperation = Identifier (Operand RightHandSide)?
   RightHandSide = Identifier | NumberLiteral
   Operand = "+" | "-" | "*" | "/"
   
   RollDeclaration = "{{@" ModifierLiteral "|" listOf<Approach, ",">? "|" listOf<Skill, ",">? "}}" RollOutcome* "{{/@}}"
-  RollOutcome = (FlavorVariant* RollSucceed RollFail?)
-  
+  RollOutcome = (FlavorVariant* rollSucceed rollFail?)  
+
   FlavorVariant = "{{>" Approach? "|"? Skill? "}}" // you can get an approach or a skill, or both!
-  RollSucceed = "{{=succeed}}" Statement*
-  RollFail = "{{=fail}}" Statement*
+  rollSucceed = "{{=succeed}}" display*
+  rollFail = "{{=fail}}" display*
   
   Approach = caseInsensitive<"Careful"> 
            | caseInsensitive<"Clever"> 
@@ -49,7 +49,7 @@ RespondScript {
         | caseInsensitive<"Instinct">
         | caseInsensitive<"Dominion">
   
-  Display = EmbedState | plainText
+  display = embedState | plainText
   
   plainText = (~"{{" any)+
  

@@ -126,10 +126,13 @@ semantics.addOperation("toPOIResponse", {
   },
 
   Default(displayNodes) {
-    return displayNodes.children.map((d) => d.toPOIResponse()).join("");
+    return displayNodes.children
+      .map((d) => d.toPOIResponse())
+      .join("")
+      .replace(/\r?\n$/, "");
   },
 
-  Display(childNode) {
+  display(childNode) {
     return childNode.toPOIResponse();
   },
 
@@ -137,7 +140,7 @@ semantics.addOperation("toPOIResponse", {
     return charsNode.sourceString;
   },
 
-  EmbedState(_open, opNode, _close) {
+  embedState(_open, opNode, _close) {
     return `\${state.${opNode.toPOIResponse()}}`;
   },
 
@@ -183,11 +186,11 @@ semantics.addOperation("toPOIResponse", {
     );
 
     const checks = outcomes.map((o) => {
-      const flavorApproaches = o.flavors
-        ?.map((f) => f.approach)
+      const flavorApproaches = (o.flavors ?? [])
+        .map((f) => f.approach)
         .filter(Boolean) as Approaches[];
-      const flavorSkills = o.flavors
-        ?.map((f) => f.skill)
+      const flavorSkills = (o.flavors ?? [])
+        .map((f) => f.skill)
         .filter(Boolean) as SkillTags[];
 
       return {
@@ -225,12 +228,28 @@ semantics.addOperation("toPOIResponse", {
     };
   },
 
-  RollSucceed(_open, statements) {
-    return statements.children.map((s) => s.toPOIResponse()).join("");
+  rollSucceed(_open, statements) {
+    return statements.children
+      .map((s) => s.toPOIResponse())
+      .join("")
+      .replace(/\r?\n$/, "");
   },
 
-  RollFail(_open, statements) {
-    return statements.children.map((s) => s.toPOIResponse()).join("");
+  rollFail(_open, statements) {
+    return statements.children
+      .map((s) => s.toPOIResponse())
+      .join("")
+      .replace(/\r?\n$/, "");
+  },
+
+  Approach(node) {
+    return normalizeTitleCase<Approaches>(
+      node.sourceString.trim() as Approaches,
+    );
+  },
+
+  Skill(node) {
+    return normalizeTitleCase<SkillTags>(node.sourceString.trim() as SkillTags);
   },
 
   FlavorVariant(
@@ -255,5 +274,9 @@ semantics.addOperation("toPOIResponse", {
         : null;
 
     return { approach, skill };
+  },
+
+  _terminal() {
+    return this.sourceString;
   },
 });

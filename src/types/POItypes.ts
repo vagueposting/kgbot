@@ -4,6 +4,7 @@ import { getParentId } from "../utils/getParentId";
 import { parseMethodScript } from "../utils/parseMethod";
 import { parseResponseScript } from "../utils/parseResponse";
 import { parseStateScript } from "../utils/parseState";
+import { evalStateExpression } from "../utils/evalStateExpression";
 import { RollStatus } from "./RollStatus";
 import { Approaches } from "./skillsAndApproaches";
 import { SkillTags } from "./skillsAndApproaches";
@@ -79,8 +80,8 @@ export interface ParsedActions {
 }
 
 function interpolateTemplate(template: string, state: POIState): string {
-  return template.replace(/\$\{state\.(\w+)\}/g, (_, key) => {
-    return state[key] !== undefined ? String(state[key]) : "";
+  return template.replace(/\$\{state\.([^}]+)\}/g, (_, expr) => {
+    return evalStateExpression(expr, state);
   });
 }
 
