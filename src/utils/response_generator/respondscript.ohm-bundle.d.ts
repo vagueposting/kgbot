@@ -19,9 +19,7 @@ export interface RespondScriptActionDict<T> extends BaseActionDict<T> {
   ConditionalBlock?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode, arg2: IterationNode, arg3: TerminalNode) => T;
   IfClause?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode, arg3: IterationNode) => T;
   ElseIfClause?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode, arg3: IterationNode) => T;
-  ElseClause?: (this: NonterminalNode, arg0: TerminalNode, arg1: TerminalNode, arg2: IterationNode) => T;
-  AliasBlock?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: IterationNode, arg3: TerminalNode) => T;
-  AliasCase?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode, arg3: IterationNode) => T;
+  ElseClause?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode) => T;
   Condition?: (this: NonterminalNode, arg0: NonterminalNode, arg1: NonterminalNode, arg2: NonterminalNode) => T;
   Comparator?: (this: NonterminalNode, arg0: TerminalNode) => T;
   EmbedState?: (this: NonterminalNode, arg0: TerminalNode, arg1: NonterminalNode, arg2: TerminalNode) => T;
@@ -36,16 +34,14 @@ export interface RespondScriptActionDict<T> extends BaseActionDict<T> {
   Approach?: (this: NonterminalNode, arg0: NonterminalNode) => T;
   Skill?: (this: NonterminalNode, arg0: NonterminalNode) => T;
   Display?: (this: NonterminalNode, arg0: NonterminalNode) => T;
-  PlainText?: (this: NonterminalNode, arg0: IterationNode) => T;
+  plainText?: (this: NonterminalNode, arg0: IterationNode) => T;
   Identifier?: (this: NonterminalNode, arg0: NonterminalNode) => T;
   name?: (this: NonterminalNode, arg0: NonterminalNode, arg1: IterationNode) => T;
-  Keyword?: (this: NonterminalNode, arg0: NonterminalNode | TerminalNode) => T;
   Value?: (this: NonterminalNode, arg0: NonterminalNode) => T;
   StringLiteral?: (this: NonterminalNode, arg0: TerminalNode, arg1: IterationNode, arg2: TerminalNode) => T;
   NumberLiteral?: (this: NonterminalNode, arg0: IterationNode) => T;
   BooleanLiteral?: (this: NonterminalNode, arg0: TerminalNode) => T;
   ModifierLiteral?: (this: NonterminalNode, arg0: IterationNode, arg1: IterationNode) => T;
-  ActionType?: (this: NonterminalNode, arg0: TerminalNode) => T;
   ActionDegree?: (this: NonterminalNode, arg0: NonterminalNode) => T;
   space?: (this: NonterminalNode, arg0: TerminalNode) => T;
 }

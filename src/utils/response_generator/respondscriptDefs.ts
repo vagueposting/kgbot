@@ -1,5 +1,6 @@
-import { POIResponse, POIMethod, POIState } from "../../types/POItypes";
+import { POIResponse } from "../../types/POItypes";
 import { Approaches, SkillTags } from "../../types/skillsAndApproaches";
+import { normalizeTitleCase } from "../syntaxManagement";
 import grammar, { RespondScriptSemantics } from "./respondscript.ohm-bundle";
 
 export type ScriptNode =
@@ -79,7 +80,7 @@ semantics.addOperation("toPOIResponse", {
     };
   },
 
-  ElseClause(_open, _close, statementsNode) {
+  ElseClause(_marker, statementsNode) {
     return {
       statements: statementsNode.children.map((s) => s.toPOIResponse()),
     };
@@ -109,8 +110,8 @@ semantics.addOperation("toPOIResponse", {
     return chars.sourceString;
   },
 
-  NumberLiteral(_digits) {
-    return Number(this.sourceString);
+  NumberLiteral(digitsNode) {
+    return Number(digitsNode.sourceString);
   },
 
   Identifier(node) {
@@ -132,8 +133,8 @@ semantics.addOperation("toPOIResponse", {
     return childNode.toPOIResponse();
   },
 
-  PlainText(_chars) {
-    return this.sourceString;
+  plainText(charsNode) {
+    return charsNode.sourceString;
   },
 
   EmbedState(_open, opNode, _close) {
@@ -143,7 +144,7 @@ semantics.addOperation("toPOIResponse", {
   IdentifierOperation(idNode, operandNode, rhsNode) {
     const id = idNode.toPOIResponse();
 
-    if (operandNode.children.length === 0) {
+    if (operandNode.children.length === 0 || rhsNode.children.length === 0) {
       return id;
     }
 
@@ -203,8 +204,8 @@ semantics.addOperation("toPOIResponse", {
     return {
       type: "roll",
       modifier: modNode.toPOIResponse(),
-      approaches: defaultApproaches.flat(),
-      skills: defaultSkills.flat(),
+      approaches: defaultApproaches,
+      skills: defaultSkills,
       checks,
     };
   },
@@ -241,12 +242,16 @@ semantics.addOperation("toPOIResponse", {
   ): { approach: Approaches | null; skill: SkillTags | null } {
     const approach =
       approachNode.children.length > 0
-        ? (approachNode.sourceString.trim() as Approaches)
+        ? normalizeTitleCase<Approaches>(
+            approachNode.sourceString.trim() as Approaches,
+          )
         : null;
 
     const skill =
       skillNode.children.length > 0
-        ? (skillNode.sourceString.trim() as SkillTags)
+        ? normalizeTitleCase<SkillTags>(
+            skillNode.sourceString.trim() as SkillTags,
+          )
         : null;
 
     return { approach, skill };

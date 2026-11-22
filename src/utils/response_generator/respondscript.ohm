@@ -13,10 +13,7 @@ RespondScript {
   ConditionalBlock = IfClause ElseIfClause* ElseClause? "{{/?}}"
   IfClause         = "{{?" Condition "}}" Statement*
   ElseIfClause     = "{{??" Condition "}}" Statement*
-  ElseClause       = "{{!?" "}}" Statement*
-
-  AliasBlock = "{{alias}}" AliasCase+ ElseClause? "{{/alias}}"
-  AliasCase  = "{{:" listOf<StringLiteral, ","> "}}" Statement*
+  ElseClause       = "{{!?}}" Statement*
 
   Condition        = Identifier Comparator Value
   Comparator       = "==" | "!=" | ">=" | "<=" | ">" | "<"
@@ -52,23 +49,19 @@ RespondScript {
         | caseInsensitive<"Instinct">
         | caseInsensitive<"Dominion">
   
-  Display = EmbedState | PlainText
+  Display = EmbedState | plainText
   
-  PlainText = (~"{{" any)+
+  plainText = (~"{{" any)+
  
-  Identifier = ~Keyword name
+  Identifier = name
   name = letter alnum*
-  
-  Keyword = ActionType | BooleanLiteral | "succeed" | "fail"
+
 
   Value = StringLiteral | NumberLiteral | BooleanLiteral
   StringLiteral = "\"" (~"\"" any)* "\""
   NumberLiteral = digit+
   BooleanLiteral = "true" | "false"
   ModifierLiteral = ("+" | "-")? digit+
-
-  ActionType = "dec" | "inc" | "set"
-             | "flip" | "true" | "untrue"
                         
   ActionDegree = StringLiteral | NumberLiteral
   
