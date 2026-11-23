@@ -33,6 +33,16 @@ export function setupDatabase(): void {
       settingName TEXT UNIQUE NOT NULL,
       settingData TEXT NOT NULL
     )
+
+    CREATE TABLE IF NOT EXISTS users (
+      userName TEXT NOT NULL,
+      userID TEXT UNIQUE NOT NULL,
+      firstJoined TEXT NOT NULL,
+      leftOn TEXT,
+      onServer BOOLEAN NOT NULL DEFAULT 0 CHECK (onServer IN (0, 1)),
+      data TEXT NOT NULL,
+      prunedOn TEXT
+    )
   `;
 
   db.exec(createTableQuery);

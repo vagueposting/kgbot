@@ -16,6 +16,8 @@ import dotenv from "dotenv";
 import { handleActiveCheckRoll } from "./auto-gm/handleActiveCheckRoll";
 import { autoGMOrchestrator } from "./auto-gm/autoGMOrchestrator";
 import { handleRetrievalButton } from "./auto-gm/activeCheckManager";
+import { Player } from "./types/player";
+
 dotenv.config();
 
 export interface Command {
@@ -36,6 +38,7 @@ botFeedChannels.rehydrate();
 const client = new ExtendedClient({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
   ],
@@ -80,6 +83,14 @@ function loadCommand(filePath: string) {
     );
   }
 }
+
+client.on("guildMemberAdd", (member) => {
+  new Player(member);
+});
+
+client.on("guildMemberRemove", (member) => {
+  console.log(`${member.user.tag} left the server on ${new Date()}`);
+});
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   // AUTOCOMPLETE

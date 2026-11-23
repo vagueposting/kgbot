@@ -1,9 +1,22 @@
 import { Approaches, SkillTags } from "./skillsAndApproaches";
 import { getDb } from "../db/setup";
+import { GuildMember, User } from "discord.js";
+
+type UserRow = {
+  userName: string;
+  userID: string;
+  firstJoined: string;
+  leftOn: string;
+  onServer: 0 | 1;
+  data: string;
+  prunedOn: string;
+};
 
 type PlayerData = {
   name: string;
   id: string;
+  firstJoined: string;
+  onServer: boolean;
 };
 
 type PlayerSettings = keyof PlayerData;
@@ -36,6 +49,14 @@ type SkillData = {
   type: [SkillTags] | [SkillTags, SkillTags];
 };
 type LifeStatus = "ALIVE" | "DEAD" | "MIA";
+const characterTemplate: CharacterData = {
+  name: "",
+  sheetLink: "",
+  tupperNames: [],
+  status: "ALIVE",
+  parameters: null,
+  inventory: [],
+};
 
 // TODO: make operations for stats and inventory
 
@@ -59,25 +80,56 @@ export class Player {
   playerData: PlayerData;
   characterData: CharacterData;
 
-  constructor(playerName: string) {
+  constructor(member: GuildMember) {
+    const { user } = member;
     this.playerData = {
-      name: playerName,
-      id: "",
+      name: user.username,
+      id: user.id,
+      firstJoined: "",
+      onServer: true,
     };
 
-    this.characterData = {
-      name: "",
-      sheetLink: "",
-      tupperNames: [],
-      status: "ALIVE",
-      parameters: null,
-      inventory: [],
-    };
-  }
+    const db = getDb();
+    const existingPlayer = db
+      .prepare(
+        /*sql*/ `SELECT * FROM users
+      WHERE userID = ?
+      LIMIT 1`,
+      )
+      .get(user.id) as UserRow;
 
-  linkSheet(newLink: string) {
-    if (!this.characterData) return;
-    this.characterData.sheetLink = newLink;
+    if (existingPlayer) {
+      this.playerData = {
+        name: existingPlayer.userName ?? user.username,
+        id: existingPlayer.userID,
+        firstJoined: existingPlayer.firstJoined,
+        onServer: true,
+      };
+
+      const row = db
+        .prepare(
+          /*sql*/ `SELECT data FROM users
+       WHERE userID = ?
+       LIMIT 1`,
+        )
+        .get(user.id) as { data: string } | undefined;
+
+      if (row?.data) {
+        const parsed = JSON.parse(row.data);
+        this.characterData = parsed.characterData ?? parsed;
+      } else {
+        this.characterData = characterTemplate;
+      }
+    } else {
+      this.playerData = {
+        ...this.playerData,
+        firstJoined: String(member.joinedTimestamp ?? Date.now()),
+      };
+
+      this.characterData = characterTemplate;
+    }
+
+    this.writeToData();
   }
 
   // DATA MANAGEMENT
