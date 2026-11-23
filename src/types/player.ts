@@ -6,6 +6,11 @@ type PlayerData = {
   id: string;
 };
 
+type PlayerSettings = keyof PlayerData;
+type PlayerSettingValues = {
+  [K in PlayerSettings]: PlayerData[K];
+};
+
 type CharacterData = {
   name: string;
   sheetLink: string;
@@ -96,6 +101,13 @@ export class Player {
 
   // INFO EDITING
 
+  modifyPlayerData<T extends PlayerSettings>(
+    playerField: T,
+    modifiedData: PlayerSettingValues[T],
+  ): boolean {
+    return false;
+  }
+
   modifyCharacterData<T extends CharacterSettings>(
     characterField: T,
     modifiedData: CharacterSettingValues[T],
@@ -110,11 +122,14 @@ export class Player {
 
         if (operation === "add") {
           tupperNames.push(targetName);
+          this.writeToData();
+          return true;
         } else if (operation === "remove") {
           const removeIndex = tupperNames.findIndex((n) => n === targetName);
 
           if (removeIndex !== -1) {
             tupperNames.splice(removeIndex, 1);
+            this.writeToData();
             return true;
           }
 
@@ -128,6 +143,8 @@ export class Player {
         const didItChange = oldData !== nextValue;
 
         this.characterData[characterField] = nextValue;
+
+        if (didItChange) this.writeToData();
         return didItChange;
     }
 
