@@ -105,7 +105,17 @@ export class Player {
     playerField: T,
     modifiedData: PlayerSettingValues[T],
   ): boolean {
-    return false;
+    switch (playerField) {
+      default:
+        const nextValue = modifiedData as PlayerData[T];
+        const oldData = this.playerData[playerField];
+        const didItChange = oldData !== nextValue;
+
+        this.playerData[playerField] = nextValue;
+
+        if (didItChange) this.writeToData();
+        return didItChange;
+    }
   }
 
   modifyCharacterData<T extends CharacterSettings>(
