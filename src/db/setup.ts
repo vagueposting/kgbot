@@ -41,7 +41,7 @@ export function setupDatabase(): void {
       leftOn TEXT,
       onServer BOOLEAN NOT NULL DEFAULT 0 CHECK (onServer IN (0, 1)),
       data TEXT NOT NULL,
-      prunedOn TEXT
+      pruneDate TEXT
     )
   `;
 

@@ -17,6 +17,7 @@ import { handleActiveCheckRoll } from "./auto-gm/handleActiveCheckRoll";
 import { autoGMOrchestrator } from "./auto-gm/autoGMOrchestrator";
 import { handleRetrievalButton } from "./auto-gm/activeCheckManager";
 import { Player } from "./types/player";
+import { removeUser } from "./users/removeUser";
 
 dotenv.config();
 
@@ -89,7 +90,11 @@ client.on("guildMemberAdd", (member) => {
 });
 
 client.on("guildMemberRemove", (member) => {
-  console.log(`${member.user.tag} left the server on ${new Date()}`);
+  removeUser(member);
+
+  /* TODO:
+  This should go on a different listener, but
+  I need to actually create a prune routine. */
 });
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {

@@ -1,8 +1,8 @@
 import { Approaches, SkillTags } from "./skillsAndApproaches";
 import { getDb } from "../db/setup";
-import { GuildMember, User } from "discord.js";
+import { GuildMember, Guild } from "discord.js";
 
-type UserRow = {
+interface UserRow {
   userName: string;
   userID: string;
   firstJoined: string;
@@ -10,7 +10,12 @@ type UserRow = {
   onServer: 0 | 1;
   data: string;
   prunedOn: string;
-};
+}
+
+interface PlayerJsonPayload {
+  playerData: PlayerData;
+  characterData: CharacterData;
+}
 
 type PlayerData = {
   name: string;
@@ -129,26 +134,7 @@ export class Player {
       this.characterData = characterTemplate;
     }
 
-    this.writeToData();
-  }
-
-  // DATA MANAGEMENT
-  toJSON(): string {
-    const payload = {
-      playerData: this.playerData,
-      characterData: this.characterData,
-    };
-
-    return JSON.stringify(payload);
-  }
-
-  writeToData(): void {
-    const payload = this.toJSON();
-    const db = getDb();
-    db.prepare(/*sql*/ `UPDATE users SET data = ? WHERE userID = ?`).run(
-      payload,
-      this.playerData.id,
-    );
+    this.saveOnJoin();
   }
 
   // INFO EDITING
@@ -211,5 +197,87 @@ export class Player {
     }
 
     return false;
+  }
+
+  // DATA MANAGEMENT
+  /**
+   * Used to stringify the Player Class.
+   * @returns a payload string for re-initializing.
+   */
+  toJSON(): string {
+    const payload = {
+      playerData: this.playerData,
+      characterData: this.characterData,
+    };
+
+    return JSON.stringify(payload);
+  }
+
+  /**
+   * Update the database to reflect changes to the Player entity.
+   */
+  writeToData(): void {
+    const payload = this.toJSON();
+    const db = getDb();
+    db.prepare(/*sql*/ `UPDATE users SET data = ? WHERE userID = ?`).run(
+      payload,
+      this.playerData.id,
+    );
+  }
+
+  /**
+   * Private method for registering new Player entities.
+   */
+  private saveOnJoin(): void {
+    const db = getDb();
+    db.prepare(
+      /*sql*/ `
+    INSERT INTO users (
+      userName,
+      userID,
+      firstJoined,
+      leftOn,
+      onServer,
+      data,
+      prunedOn
+    )
+    VALUES (?, ?, ?, NULL, 1, ?, NULL)
+    ON CONFLICT(userID) DO UPDATE SET
+      userName = excluded.userName,
+      leftOn = NULL,
+      onServer = 1,
+      prunedOn = NULL
+  `,
+    ).run(
+      this.playerData.name,
+      this.playerData.id,
+      this.playerData.firstJoined,
+      JSON.stringify({ characterData: this.characterData }),
+    );
+  }
+
+  /**
+   * Retrieves a Player entity from the users database
+   * @param row user database columns
+   * @param guild the Discord server the bot is running on
+   * @returns a Player entity that can be interacted with
+   */
+  static async fromRow(row: UserRow, guild: Guild): Promise<Player> {
+    const parsed = JSON.parse(row.data) as PlayerJsonPayload;
+    const targetId = parsed.playerData?.id ?? row.userID;
+
+    const member = await guild.members.fetch(targetId).catch(() => null);
+
+    const player = member
+      ? new Player(member)
+      : (Object.create(Player.prototype) as Player);
+
+    player.playerData = {
+      ...parsed.playerData,
+      onServer: Boolean(row.onServer),
+    };
+    player.characterData = parsed.characterData;
+
+    return player;
   }
 }
