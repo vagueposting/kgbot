@@ -8,9 +8,10 @@ type PlayerData = {
 
 type CharacterData = {
   name: string;
-  nicknames: string[];
   sheetLink: string;
-  stats: CharacterStats | null;
+  tupperNames: string[];
+  status: LifeStatus;
+  parameters: CharacterStats | null;
   /* TODO: create an item class
   and switch it to an array of items*/
   inventory: any[];
@@ -29,6 +30,25 @@ type SkillData = {
   modifier: number;
   type: [SkillTags] | [SkillTags, SkillTags];
 };
+type LifeStatus = "ALIVE" | "DEAD" | "MIA";
+
+// TODO: make operations for stats and inventory
+
+type CharacterSettings = Exclude<
+  keyof CharacterData,
+  "parameters" | "inventory"
+>;
+
+type TupperNamesMutation =
+  | { operation: "add"; targetName: string }
+  | { operation: "remove"; targetName: string };
+
+// Map each setting to what `modifyCharacterData` accepts
+type CharacterSettingValues = {
+  [K in CharacterSettings]: K extends "tupperNames"
+    ? TupperNamesMutation
+    : CharacterData[K];
+};
 
 export class Player {
   playerData: PlayerData;
@@ -42,20 +62,27 @@ export class Player {
 
     this.characterData = {
       name: "",
-      nicknames: [],
       sheetLink: "",
-      stats: null,
+      tupperNames: [],
+      status: "ALIVE",
+      parameters: null,
       inventory: [],
     };
   }
 
   linkSheet(newLink: string) {
+    if (!this.characterData) return;
     this.characterData.sheetLink = newLink;
   }
 
+  // DATA MANAGEMENT
   toJSON(): string {
-    // TODO: design payload
-    return "";
+    const payload = {
+      playerData: this.playerData,
+      characterData: this.characterData,
+    };
+
+    return JSON.stringify(payload);
   }
 
   writeToData(): void {
@@ -65,5 +92,45 @@ export class Player {
       payload,
       this.playerData.id,
     );
+  }
+
+  // INFO EDITING
+
+  modifyCharacterData<T extends CharacterSettings>(
+    characterField: T,
+    modifiedData: CharacterSettingValues[T],
+  ): boolean {
+    switch (characterField) {
+      case "tupperNames":
+        const { tupperNames } = this.characterData;
+        const { targetName, operation } = modifiedData as {
+          targetName: string;
+          operation: "add" | "remove";
+        };
+
+        if (operation === "add") {
+          tupperNames.push(targetName);
+        } else if (operation === "remove") {
+          const removeIndex = tupperNames.findIndex((n) => n === targetName);
+
+          if (removeIndex !== -1) {
+            tupperNames.splice(removeIndex, 1);
+            return true;
+          }
+
+          return false;
+        }
+
+        break;
+      default:
+        const nextValue = modifiedData as CharacterData[T];
+        const oldData = this.characterData[characterField];
+        const didItChange = oldData !== nextValue;
+
+        this.characterData[characterField] = nextValue;
+        return didItChange;
+    }
+
+    return false;
   }
 }
